@@ -15,10 +15,6 @@ export default function AuthLayout() {
       try {
         const authStatus = await checkAuthenticationStatus();
         if (authStatus.isAuthenticated && authStatus.userRole) {
-          console.log(
-            "User already authenticated in auth layout, redirecting to dashboard for role:",
-            authStatus.userRole
-          );
           navigateToDashboard(authStatus.userRole);
         }
       } catch (error) {

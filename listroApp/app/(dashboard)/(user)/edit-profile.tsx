@@ -108,21 +108,7 @@ export default function UserEditProfileScreen() {
 
   // Update form when profile data is loaded
   useEffect(() => {
-    console.log("User edit profile - profileData:", profileData);
-    console.log("User edit profile - isLoadingProfile:", isLoadingProfile);
-    console.log("User edit profile - profileError:", profileError);
-
     if (profileData && isUserProfile(profileData)) {
-      console.log("User edit profile - Resetting form with data:", {
-        name: profileData.name,
-        phone: profileData.phone,
-        primaryAddress: profileData.primaryAddress,
-        primaryCity: profileData.primaryCity,
-        primaryState: profileData.primaryState,
-        primaryZipCode: profileData.primaryZipCode,
-        primaryCountry: profileData.primaryCountry,
-      });
-
       reset({
         name: profileData.name || "",
         phone: profileData.phone || "",
@@ -133,12 +119,6 @@ export default function UserEditProfileScreen() {
         primaryCountry: profileData.primaryCountry || "India",
       });
     } else {
-      console.log(
-        "User edit profile - Not resetting form. profileData:",
-        profileData,
-        "isUserProfile:",
-        profileData ? isUserProfile(profileData) : false
-      );
     }
   }, [profileData, reset, isLoadingProfile, profileError]);
 
@@ -146,8 +126,6 @@ export default function UserEditProfileScreen() {
 
   const onSubmit = async (data: any) => {
     try {
-      console.log("User profile data:", data);
-
       await updateProfileMutation.mutateAsync(data);
 
       Alert.alert("Success", "Profile updated successfully", [

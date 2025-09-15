@@ -83,6 +83,18 @@ export const userService = {
     return response.data;
   },
 
+  // Get all business addresses
+  getBusinessAddresses: async (): Promise<BusinessAddress[]> => {
+    const response = await api.get<{ data: BusinessAddress[] }>("/users/business-addresses");
+    return response.data.data;
+  },
+
+  // Create new business address
+  createBusinessAddress: async (data: Omit<BusinessAddress, 'id' | 'createdAt' | 'updatedAt'>): Promise<BusinessAddress> => {
+    const response = await api.post<{ data: BusinessAddress }>("/users/business-addresses", data);
+    return response.data.data;
+  },
+
   // Update business address
   updateBusinessAddress: async (
     addressId: string,

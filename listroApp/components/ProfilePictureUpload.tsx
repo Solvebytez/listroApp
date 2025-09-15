@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { ResponsiveText } from "@/components";
+import { ResponsiveText } from "./UI/ResponsiveText";
 import { COLORS, MARGIN } from "@/constants";
 import {
   useProfilePicture,
@@ -86,11 +86,6 @@ export const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
         await import("@react-native-async-storage/async-storage")
       ).default;
       const token = await AsyncStorage.getItem("accessToken");
-      console.log("ProfilePictureUpload: Token exists:", !!token);
-      console.log(
-        "ProfilePictureUpload: Token preview:",
-        token ? token.substring(0, 20) + "..." : "No token"
-      );
 
       const file = {
         uri: imageAsset.uri,

@@ -65,7 +65,6 @@ export default function AuthScreen() {
 
       let response;
       if (activeTab === "login") {
-        console.log("Attempting login:", { email, selectedRole });
         // Add password to userData for login
         const loginUserData = {
           ...userData,
@@ -73,12 +72,6 @@ export default function AuthScreen() {
         };
         response = await authHandle(loginUserData);
       } else {
-        console.log("Attempting registration:", {
-          email,
-          fullName,
-          phone,
-          selectedRole,
-        });
         // Add password to userData for registration
         const registerUserData = {
           ...userData,
@@ -88,7 +81,6 @@ export default function AuthScreen() {
       }
 
       if (response.success) {
-        console.log("Authentication successful:", response.data.user);
 
         if (activeTab === "login") {
           // For login, navigate to dashboard directly

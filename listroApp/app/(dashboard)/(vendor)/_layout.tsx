@@ -1,11 +1,6 @@
 import { Stack } from "expo-router";
-import { useEffect } from "react";
 
 export default function VendorStackLayout() {
-  useEffect(() => {
-    console.log("VendorStackLayout: Component mounted");
-  }, []);
-
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="dashboard" />

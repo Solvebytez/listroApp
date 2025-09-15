@@ -24,6 +24,10 @@ export default {
         backgroundColor: "#00D4FF",
       },
     },
+    androidStatusBar: {
+      backgroundColor: "#00D4FF",
+      barStyle: "light-content",
+    },
     web: {
       favicon: "./assets/favicon.png",
     },

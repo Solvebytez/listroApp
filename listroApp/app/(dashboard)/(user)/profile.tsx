@@ -20,13 +20,6 @@ export default function UserProfileScreen() {
   // Use React Query to fetch user data
   const { data: user, isLoading, error } = useUser();
 
-  // Debug raw user data (only when needed)
-  // console.log("=== RAW USER DATA DEBUG (USER PROFILE) ===");
-  // console.log("user:", user);
-  // console.log("user?.role:", user?.role);
-  // console.log("isLoading:", isLoading);
-  // console.log("error:", error);
-  // console.log("=== END RAW USER DATA DEBUG (USER PROFILE) ===");
 
   // Transform user data to ProfileData format
   const userProfileData: ProfileData | null = user
@@ -84,11 +77,9 @@ export default function UserProfileScreen() {
             onPress: async () => {
               try {
                 setIsSwitchingRole(true);
-                console.log("Switching to VENDOR role");
                 await switchRole("VENDOR");
 
                 // Invalidate React Query cache to get fresh user data
-                console.log("Invalidating user cache after role switch");
                 queryClient.invalidateQueries({ queryKey: ["user"] });
                 queryClient.invalidateQueries({ queryKey: ["profile"] });
               } catch (error) {
@@ -133,22 +124,13 @@ export default function UserProfileScreen() {
   const handleEditProfile = () => {
     // Navigate to edit profile screen based on current user role
     const currentRole = user?.role?.toLowerCase();
-    console.log("=== EDIT PROFILE DEBUG (USER SCREEN) ===");
-    console.log("Raw user data:", user);
-    console.log("User role:", user?.role);
-    console.log("Current role (lowercase):", currentRole);
-    console.log("isLoading:", isLoading);
-    console.log("=== END EDIT PROFILE DEBUG ===");
 
     // Force navigation based on actual role from user data
     if (currentRole === "vendor") {
-      console.log("FORCE: Navigating to VENDOR edit profile");
       router.push("/(dashboard)/(vendor)/edit-profile");
     } else if (currentRole === "salesman") {
-      console.log("FORCE: Navigating to SALESMAN edit profile");
       router.push("/(dashboard)/(salesman)/edit-profile");
     } else {
-      console.log("FORCE: Navigating to USER edit profile (default)");
       router.push("/(dashboard)/(user)/edit-profile");
     }
   };
@@ -173,7 +155,6 @@ export default function UserProfileScreen() {
       iconBackground: COLORS.purple[100],
       onPress: () => {
         // TODO: Navigate to saved lists screen
-        console.log("Saved lists pressed");
       },
     },
     {
@@ -185,7 +166,6 @@ export default function UserProfileScreen() {
       iconBackground: COLORS.info[100],
       onPress: () => {
         // TODO: Navigate to notifications settings
-        console.log("Notifications pressed");
       },
     },
     {
@@ -197,7 +177,6 @@ export default function UserProfileScreen() {
       iconBackground: COLORS.success[100],
       onPress: () => {
         // TODO: Navigate to privacy settings screen
-        console.log("Privacy & security pressed");
       },
     },
     {
@@ -209,7 +188,6 @@ export default function UserProfileScreen() {
       iconBackground: COLORS.info[100],
       onPress: () => {
         // TODO: Navigate to about app screen
-        console.log("About app pressed");
       },
     },
   ];
@@ -219,24 +197,19 @@ export default function UserProfileScreen() {
       setIsLoggingOut(true);
 
       // Call backend logout API first
-      console.log("Calling backend logout API");
       const { authService } = await import("../../../services/auth");
       await authService.logout();
 
       // Only proceed if API call was successful
-      console.log("Backend logout successful, proceeding with cleanup");
 
       // Clear React Query cache
-      console.log("Clearing React Query cache after API logout");
       queryClient.clear();
 
       // Navigate to role selection only after successful API response
-      console.log("Navigating to role selection");
       router.replace("/(auth)/role-selection");
     } catch (error) {
       console.error("Logout error:", error);
       // Even if API call fails, clear local data and navigate
-      console.log("API logout failed, clearing local data anyway");
       queryClient.clear();
       await logout();
     } finally {

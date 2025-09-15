@@ -14,7 +14,7 @@ import {
   ResponsiveCard,
   ResponsiveButton,
   GlobalStatusBar,
-  BackButton,
+  AppHeader,
 } from "@/components";
 import {
   COLORS,

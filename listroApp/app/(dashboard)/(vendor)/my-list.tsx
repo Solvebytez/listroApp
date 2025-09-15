@@ -14,7 +14,7 @@ import {
   ResponsiveCard,
   ResponsiveButton,
   GlobalStatusBar,
-  BackButton,
+  AppHeader,
   VendorListCard,
   VendorListFilterBar,
 } from "@/components";
@@ -219,111 +219,100 @@ export default function MyListScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <GlobalStatusBar />
-
-      {/* Header with Solid Background */}
-      <View style={styles.headerSolid}>
-        {/* Top Navigation */}
-        <View style={styles.topNavigation}>
-          <BackButton
-            onPress={() => router.back()}
-            variant="default"
-            size="medium"
-            showText={false}
-            showIcon={true}
-            iconName="arrow-back"
-          />
-          <ResponsiveText variant="h5" weight="bold" color={COLORS.white}>
-            My Listings
-          </ResponsiveText>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => {
+    <>
+      <GlobalStatusBar
+        barStyle="light-content"
+        backgroundColor="rgba(0, 0, 0, 0.3)"
+        translucent={true}
+      />
+      <SafeAreaView style={styles.container} edges={["left", "right"]}>
+        {/* Header */}
+        <AppHeader
+          onBackPress={() => router.back()}
+          title="My Listings"
+          rightActionButton={{
+            iconName: "add",
+            onPress: () => {
               router.push("/(dashboard)/(vendor)/add-listing");
-            }}
-          >
-            <Ionicons
-              name="add"
-              size={LAYOUT.iconMedium}
-              color={COLORS.white}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Filter Bar */}
-        <VendorListFilterBar
-          totalCount={listings.length}
-          onStatusChange={setFilterStatus}
-          currentStatus={filterStatus}
+            },
+            backgroundColor: COLORS.primary[300],
+            iconColor: COLORS.white,
+          }}
         />
 
-        {/* Listings */}
-        {isLoading ? (
-          <ResponsiveCard variant="elevated" style={styles.loadingCard}>
-            <ResponsiveText
-              variant="body1"
-              color={COLORS.text.secondary}
-              style={styles.loadingText}
-            >
-              Loading your listings...
-            </ResponsiveText>
-          </ResponsiveCard>
-        ) : filteredListings.length === 0 ? (
-          <ResponsiveCard variant="elevated" style={styles.emptyCard}>
-            <Ionicons
-              name="list-outline"
-              size={LAYOUT.iconLarge}
-              color={COLORS.text.secondary}
-            />
-            <ResponsiveText
-              variant="h6"
-              weight="medium"
-              color={COLORS.text.secondary}
-              style={styles.emptyTitle}
-            >
-              No Listings Found
-            </ResponsiveText>
-            <ResponsiveText
-              variant="body2"
-              color={COLORS.text.secondary}
-              style={styles.emptyDescription}
-            >
-              {filterStatus === "all"
-                ? "Start by adding your first service listing"
-                : `No listings found for the selected filter`}
-            </ResponsiveText>
-            {filterStatus === "all" && (
-              <ResponsiveButton
-                title="Add First Listing"
-                variant="primary"
-                size="medium"
-                onPress={() => {
-                  router.push("/(dashboard)/(vendor)/add-listing");
-                }}
-                style={styles.addFirstButton}
-              />
-            )}
-          </ResponsiveCard>
-        ) : (
-          filteredListings.map((listing) => (
-            <VendorListCard
-              key={listing.id}
-              listing={listing}
-              onPress={handleListingPress}
-            />
-          ))
-        )}
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Filter Bar */}
+          <VendorListFilterBar
+            totalCount={listings.length}
+            onStatusChange={setFilterStatus}
+            currentStatus={filterStatus}
+          />
 
-        {/* Bottom Spacing */}
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
-    </SafeAreaView>
+          {/* Listings */}
+          {isLoading ? (
+            <ResponsiveCard variant="elevated" style={styles.loadingCard}>
+              <ResponsiveText
+                variant="body1"
+                color={COLORS.text.secondary}
+                style={styles.loadingText}
+              >
+                Loading your listings...
+              </ResponsiveText>
+            </ResponsiveCard>
+          ) : filteredListings.length === 0 ? (
+            <ResponsiveCard variant="elevated" style={styles.emptyCard}>
+              <Ionicons
+                name="list-outline"
+                size={LAYOUT.iconLarge}
+                color={COLORS.text.secondary}
+              />
+              <ResponsiveText
+                variant="h6"
+                weight="medium"
+                color={COLORS.text.secondary}
+                style={styles.emptyTitle}
+              >
+                No Listings Found
+              </ResponsiveText>
+              <ResponsiveText
+                variant="body2"
+                color={COLORS.text.secondary}
+                style={styles.emptyDescription}
+              >
+                {filterStatus === "all"
+                  ? "Start by adding your first service listing"
+                  : `No listings found for the selected filter`}
+              </ResponsiveText>
+              {filterStatus === "all" && (
+                <ResponsiveButton
+                  title="Add First Listing"
+                  variant="primary"
+                  size="medium"
+                  onPress={() => {
+                    router.push("/(dashboard)/(vendor)/add-listing");
+                  }}
+                  style={styles.addFirstButton}
+                />
+              )}
+            </ResponsiveCard>
+          ) : (
+            filteredListings.map((listing) => (
+              <VendorListCard
+                key={listing.id}
+                listing={listing}
+                onPress={handleListingPress}
+              />
+            ))
+          )}
+
+          {/* Bottom Spacing */}
+          <View style={styles.bottomSpacing} />
+        </ScrollView>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -331,28 +320,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background.primary,
-  },
-  headerSolid: {
-    backgroundColor: COLORS.primary[200],
-    paddingTop: MARGIN.sm,
-    paddingBottom: MARGIN.md - 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border.light,
-  },
-  topNavigation: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: PADDING.screen,
-    marginBottom: MARGIN.sm,
-  },
-  addButton: {
-    width: LAYOUT.buttonHeightSmall,
-    height: LAYOUT.buttonHeightSmall,
-    borderRadius: BORDER_RADIUS.xl,
-    backgroundColor: COLORS.primary[300],
-    justifyContent: "center",
-    alignItems: "center",
   },
   scrollView: {
     flex: 1,

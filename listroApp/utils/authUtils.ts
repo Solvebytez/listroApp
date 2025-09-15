@@ -5,15 +5,8 @@ import { router } from "expo-router";
 
 // Get the secret key from app config
 const getSecretKey = (): string => {
-  console.log("getSecretKey: Getting secret key from Constants");
-  console.log("getSecretKey: Constants.expoConfig:", Constants.expoConfig);
-  console.log(
-    "getSecretKey: Constants.expoConfig?.extra:",
-    Constants.expoConfig?.extra
-  );
 
   const secretKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_SECRET_KEY;
-  console.log("getSecretKey: Secret key:", secretKey);
 
   if (!secretKey) {
     throw new Error(
@@ -110,10 +103,6 @@ export const authHandle = async (
       }
 
       // Store access token and user role
-      console.log(
-        "authHandle: Storing access token:",
-        authResponse.data.accessToken ? "Token exists" : "No token"
-      );
       await AsyncStorage.multiSet([
         ["accessToken", authResponse.data.accessToken],
         ["userRole", authResponse.data.user.role],
@@ -132,12 +121,6 @@ export const authHandle = async (
           "userId",
         ]);
 
-      console.log("authHandle: Token storage verification:", {
-        tokenExists: !!storedToken[1],
-        roleExists: !!storedRole[1],
-        emailExists: !!storedEmail[1],
-        userIdExists: !!storedUserId[1],
-      });
 
       if (
         !storedToken[1] ||
@@ -148,15 +131,6 @@ export const authHandle = async (
         throw new Error("Failed to store authentication data in AsyncStorage");
       }
 
-      console.log("Authentication successful and data stored:", {
-        user: authResponse.data.user,
-        stored: {
-          hasToken: !!storedToken[1],
-          hasRole: !!storedRole[1],
-          hasEmail: !!storedEmail[1],
-          hasUserId: !!storedUserId[1],
-        },
-      });
 
       return authResponse;
     } else {
@@ -210,10 +184,6 @@ export const registerHandle = async (
         !authResponse.data.user.isEmailVerified
       ) {
         // LOCAL user needs OTP verification - don't store access token yet
-        console.log(
-          "Registration successful, OTP verification required:",
-          authResponse.data.user
-        );
         return authResponse;
       } else {
         // GOOGLE user or verified LOCAL user - store access token and user data
@@ -226,10 +196,6 @@ export const registerHandle = async (
           ["hasCompletedOnboarding", "true"],
         ]);
 
-        console.log(
-          "Registration successful and data stored:",
-          authResponse.data.user
-        );
         return authResponse;
       }
     } else {
@@ -292,7 +258,6 @@ export const checkAuthenticationStatus = async (): Promise<{
         };
       } catch (backendError) {
         // Backend unreachable or token invalid
-        console.log("Backend validation failed:", backendError);
 
         // If backend returns 401, it means user is not authenticated (could be PENDING, INACTIVE, etc.)
         // Don't allow offline access in this case - force re-authentication
@@ -303,7 +268,6 @@ export const checkAuthenticationStatus = async (): Promise<{
         ) {
           const error = backendError as any;
           if (error.response?.status === 401) {
-            console.log("User not authenticated (401), clearing stored data");
             await clearAuthData();
             return {
               isAuthenticated: false,
@@ -312,7 +276,6 @@ export const checkAuthenticationStatus = async (): Promise<{
         }
 
         // Only allow offline access if backend is truly unreachable (network error)
-        console.log("Backend unreachable, checking for offline access");
 
         // Check if token is expired locally (basic check)
         try {
@@ -361,26 +324,18 @@ export const checkAuthenticationStatus = async (): Promise<{
  * Navigate to appropriate dashboard based on user role
  */
 export const navigateToDashboard = (userRole: string) => {
-  console.log(
-    "navigateToDashboard: Navigating to dashboard for role:",
-    userRole
-  );
   switch (userRole.toLowerCase()) {
     case "vendor":
-      console.log("navigateToDashboard: Navigating to vendor dashboard");
       router.replace("/(dashboard)/(vendor)/dashboard");
       break;
     case "salesman":
-      console.log("navigateToDashboard: Navigating to salesman dashboard");
       router.replace("/(dashboard)/(salesman)/dashboard");
       break;
     case "admin":
-      console.log("navigateToDashboard: Navigating to admin dashboard");
       router.replace("/(dashboard)/(admin)/dashboard");
       break;
     case "user":
     default:
-      console.log("navigateToDashboard: Navigating to user home");
       router.replace("/(dashboard)/(user)/home");
       break;
   }
@@ -411,18 +366,12 @@ export const clearAuthData = async () => {
  */
 export const logout = async () => {
   try {
-    console.log("Logout: Starting logout process");
 
     // First, try to call backend logout endpoint
     try {
       const { api } = await import("@/services/api");
       await api.post("/auth/logout");
-      console.log("Logout: Backend logout successful");
     } catch (backendError) {
-      console.log(
-        "Logout: Backend logout failed, continuing with local cleanup:",
-        backendError
-      );
       // Continue with local cleanup even if backend logout fails
     }
 
@@ -434,10 +383,8 @@ export const logout = async () => {
       const currentUser = await GoogleSignin.getCurrentUser();
       if (currentUser) {
         await GoogleSignin.signOut();
-        console.log("Logout: Google Sign-in logout successful");
       }
     } catch (googleError) {
-      console.log("Logout: Google Sign-in logout failed:", googleError);
       // Continue with local cleanup even if Google logout fails
     }
 
@@ -460,22 +407,12 @@ export const logout = async () => {
       "userProfile",
     ]);
 
-    console.log("Logout: All authentication data cleared");
-
-    // Verify token is actually cleared
-    const remainingToken = await AsyncStorage.getItem("accessToken");
-    console.log(
-      "Logout: Token verification after clear:",
-      remainingToken ? "Token still exists!" : "Token successfully cleared"
-    );
-
     // Clear React Query cache to prevent stale requests
     try {
       const { QueryClient } = await import("@tanstack/react-query");
       // Note: This will only work if we have access to the query client instance
-      console.log("Logout: React Query cache should be cleared");
     } catch (queryError) {
-      console.log("Logout: Could not clear React Query cache:", queryError);
+      // Could not clear React Query cache
     }
 
     // Navigate to role selection
@@ -492,27 +429,16 @@ export const logout = async () => {
  */
 export const switchRole = async (newRole: string) => {
   try {
-    console.log("switchRole: Starting role switch to:", newRole);
     const { userService } = await import("@/services/user");
 
     // Call backend to switch role
-    console.log("switchRole: Calling backend to switch role");
     const response = await userService.switchRole(newRole);
-    console.log("switchRole: Backend response:", response);
 
     if ((response as any).success) {
       // Update AsyncStorage with new role
-      console.log(
-        "switchRole: Updating AsyncStorage with new role:",
-        newRole.toUpperCase()
-      );
       await AsyncStorage.setItem("userRole", newRole.toUpperCase());
 
       // Navigate to the appropriate dashboard
-      console.log(
-        "switchRole: Navigating to dashboard for role:",
-        newRole.toUpperCase()
-      );
       navigateToDashboard(newRole.toUpperCase());
 
       return response;

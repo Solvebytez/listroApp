@@ -16,37 +16,23 @@ export default function SplashScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
 
-  console.log("SplashScreen component is rendering!");
-
   useEffect(() => {
-    console.log("SplashScreen useEffect running");
-
     // Hide the default Expo splash screen immediately
     ExpoSplashScreen.hideAsync();
 
     // Check authentication and navigate accordingly
     const checkAuthAndNavigate = async () => {
       try {
-        console.log("Checking authentication status...");
         const authStatus = await checkAuthenticationStatus();
 
         if (authStatus.isAuthenticated && authStatus.userRole) {
           // User is logged in, navigate to their dashboard
           if (authStatus.isOffline) {
-            console.log(
-              "User authenticated (offline mode), navigating to dashboard for role:",
-              authStatus.userRole
-            );
           } else {
-            console.log(
-              "User authenticated (online), navigating to dashboard for role:",
-              authStatus.userRole
-            );
           }
           navigateToDashboard(authStatus.userRole);
         } else {
           // User not logged in, go to role selection
-          console.log("User not authenticated, navigating to role selection");
           router.replace("/(auth)/role-selection");
         }
       } catch (error) {

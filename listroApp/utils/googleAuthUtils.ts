@@ -8,7 +8,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  */
 export const handleGoogleSignIn = async (): Promise<void> => {
   try {
-    console.log("Starting Google Sign-In process...");
 
     // Check if Google Sign-In is available
     const isAvailable = await googleAuthService.isAvailable();
@@ -18,7 +17,6 @@ export const handleGoogleSignIn = async (): Promise<void> => {
 
     // Sign in with Google
     const googleUserData = await googleAuthService.signIn();
-    console.log("Google Sign-In successful:", googleUserData);
 
     // Convert Google user data to our auth format
     const authUserData: AuthUserData = {
@@ -29,13 +27,11 @@ export const handleGoogleSignIn = async (): Promise<void> => {
       providerId: googleUserData.id,
     };
 
-    console.log("Attempting authentication with backend...");
 
     // Use existing authHandle function with Google provider
     const response = await authHandle(authUserData);
 
     if (response.success) {
-      console.log("Google authentication successful:", response.data.user);
 
       // Store additional Google user data
       await AsyncStorage.setItem(
@@ -70,7 +66,6 @@ export const handleGoogleSignIn = async (): Promise<void> => {
  */
 export const handleGoogleSignOut = async (): Promise<void> => {
   try {
-    console.log("Starting Google Sign-Out process...");
 
     // Sign out from Google
     await googleAuthService.signOut();
@@ -78,7 +73,6 @@ export const handleGoogleSignOut = async (): Promise<void> => {
     // Clear stored Google user data
     await AsyncStorage.removeItem("googleUserData");
 
-    console.log("Google Sign-Out successful");
   } catch (error) {
     console.error("Google Sign-Out error:", error);
     // Don't throw error for sign-out, just log it
@@ -114,7 +108,6 @@ export const getCurrentGoogleUser =
  * Navigate to appropriate dashboard based on user role
  */
 const navigateToDashboard = (userRole: string) => {
-  console.log("Navigating to dashboard for role:", userRole);
 
   switch (userRole.toLowerCase()) {
     case "vendor":
@@ -139,7 +132,6 @@ const navigateToDashboard = (userRole: string) => {
 export const initializeGoogleSignIn = async (): Promise<void> => {
   try {
     await googleAuthService.configure();
-    console.log("Google Sign-In initialized successfully");
   } catch (error) {
     console.error("Failed to initialize Google Sign-In:", error);
     // Don't throw error, just log it - app should still work without Google Sign-In

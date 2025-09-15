@@ -1,7 +1,9 @@
 import React from "react";
 import { View, StyleSheet, ViewStyle, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { ResponsiveText, BackButton } from "@/components";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ResponsiveText } from "./ResponsiveText";
+import { BackButton } from "../BackButton";
 import { COLORS, MARGIN, PADDING, BORDER_RADIUS, LAYOUT } from "@/constants";
 
 interface AppHeaderProps {
@@ -9,6 +11,8 @@ interface AppHeaderProps {
   onBackPress?: () => void;
   /** Title to display in the header */
   title?: string;
+  /** Subtitle text to display below the title */
+  subtext?: string;
   /** Show back button (default: true) */
   showBackButton?: boolean;
   /** Custom back button icon name */
@@ -78,6 +82,7 @@ interface AppHeaderProps {
 export const AppHeader: React.FC<AppHeaderProps> = ({
   onBackPress,
   title,
+  subtext,
   showBackButton = true,
   backIconName = "arrow-back",
   backgroundColor = COLORS.primary[200],
@@ -87,8 +92,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   style,
   navigationStyle,
 }) => {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={[styles.header, { backgroundColor }, style]}>
+    <View
+      style={[
+        styles.header,
+        { backgroundColor, paddingTop: insets.top + MARGIN.sm },
+        style,
+      ]}
+    >
       {/* Top Navigation */}
       <View style={[styles.topNavigation, navigationStyle]}>
         {/* Left side - Back button or placeholder */}
@@ -105,11 +118,24 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <View style={styles.placeholder} />
         )}
 
-        {/* Center - Title */}
-        {title && (
-          <ResponsiveText variant="h5" weight="bold" color={textColor}>
-            {title}
-          </ResponsiveText>
+        {/* Center - Title and Subtext */}
+        {(title || subtext) && (
+          <View style={styles.titleContainer}>
+            {title && (
+              <ResponsiveText variant="h5" weight="bold" color={textColor}>
+                {title}
+              </ResponsiveText>
+            )}
+            {subtext && (
+              <ResponsiveText
+                variant="body2"
+                color={textColor}
+                style={styles.subtext}
+              >
+                {subtext}
+              </ResponsiveText>
+            )}
+          </View>
         )}
 
         {/* Right side - Custom component, action button, or placeholder */}
@@ -142,7 +168,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
 const styles = StyleSheet.create({
   header: {
-    paddingTop: MARGIN.sm,
     paddingBottom: MARGIN.md - 10,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border.light,
@@ -156,6 +181,16 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 40,
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  subtext: {
+    marginTop: MARGIN.xs,
+    textAlign: "center",
+    opacity: 0.9,
   },
   rightActionButton: {
     width: LAYOUT.buttonHeightSmall,

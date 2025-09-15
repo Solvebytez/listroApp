@@ -68,9 +68,7 @@ export const useProfile = () => {
     queryKey: ["profile"],
     queryFn: async (): Promise<ProfileData> => {
       try {
-        console.log("useProfile: Starting profile fetch...");
         const response = await api.get("/users/profile");
-        console.log("useProfile: API response:", response.data);
 
         if (
           response.data &&
@@ -78,11 +76,8 @@ export const useProfile = () => {
           (response.data as any).data
         ) {
           const profileData = (response.data as any).data;
-          console.log("useProfile: Profile data extracted:", profileData);
           return profileData;
         }
-
-        console.log("useProfile: Invalid response structure:", response.data);
         throw new Error("Failed to fetch profile data");
       } catch (error) {
         console.error("useProfile: Error fetching profile:", error);
@@ -122,6 +117,9 @@ export const useUpdateProfile = () => {
 
       // Also invalidate and refetch the user data to keep it in sync
       queryClient.invalidateQueries({ queryKey: ["user"] });
+
+      // Invalidate business addresses query if business addresses were updated
+      queryClient.invalidateQueries({ queryKey: ["businessAddresses"] });
     },
     onError: (error) => {
       // Handle error silently

@@ -10,7 +10,6 @@ export default function RoleSelectionScreen() {
   const handleRoleSelection = (role: string) => {
     // Store selected role for later use
     // TODO: Store in context or async storage
-    console.log("Selected role:", role);
 
     // Navigate to authentication screen with role parameter
     router.push(`/(auth)/auth?role=${role}`);

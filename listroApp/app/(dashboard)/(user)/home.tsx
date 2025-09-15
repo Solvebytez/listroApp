@@ -20,12 +20,11 @@ import {
   SPACING,
   BORDER_RADIUS,
 } from "../../../constants";
-import { ResponsiveText, ResponsiveCard, GlobalStatusBar } from "@/components";
+import { GlobalStatusBar } from "../../../components/StatusBar";
+import { ResponsiveText, ResponsiveCard } from "@/components";
 import { useUser } from "../../../hooks/useUser";
 
 export default function UserHomeScreen() {
-  console.log("UserHomeScreen: Component rendering");
-
   // Use React Query to fetch user data
   const { data: user, isLoading, error } = useUser();
 
@@ -67,328 +66,328 @@ export default function UserHomeScreen() {
   ];
 
   // Debug arrays
-  console.log("UserHomeScreen: favoriteServices:", favoriteServices);
-  console.log("UserHomeScreen: serviceCategories:", serviceCategories);
 
   const handleSearchPress = () => {
     router.push("/(dashboard)/(user)/search");
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
-      <GlobalStatusBar />
-      <View style={styles.container}>
-        {/* Header Section with Gradient */}
-        <LinearGradient
-          colors={[COLORS.primary[200], COLORS.primary[50], "#fff"]}
-          style={styles.headerGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-        >
-          {/* Logo and Icons */}
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Image
-                source={require("../../../assets/logo.png")}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
-            <View style={styles.headerIcons}>
-              <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="notifications" size={24} color={COLORS.black} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.profileButton}
-                onPress={() => {
-                  console.log(
-                    "UserHomeScreen: Profile button clicked, navigating to profile"
-                  );
-                  router.push("/(dashboard)/(user)/profile");
-                }}
-              >
-                {user?.avatar ? (
-                  <Image
-                    source={{ uri: (user as any).avatar }}
-                    style={styles.profileImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <ResponsiveText
-                    variant="buttonSmall"
-                    weight="bold"
+    <>
+      <GlobalStatusBar
+        barStyle="light-content"
+        backgroundColor={COLORS.primary[500]}
+        translucent={false}
+      />
+      <SafeAreaView style={styles.safeArea} edges={["left", "right"]}>
+        <View style={styles.container}>
+          {/* Header Section with Gradient */}
+          <LinearGradient
+            colors={[COLORS.primary[200], COLORS.primary[50], "#fff"]}
+            style={styles.headerGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          >
+            {/* Logo and Icons */}
+            <View style={styles.header}>
+              <View style={styles.logoContainer}>
+                <Image
+                  source={require("../../../assets/logo.png")}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
+              </View>
+              <View style={styles.headerIcons}>
+                <TouchableOpacity style={styles.iconButton}>
+                  <Ionicons
+                    name="notifications"
+                    size={24}
                     color={COLORS.black}
-                  >
-                    {(user as any)?.name
-                      ? (user as any).name
-                          .split(" ")
-                          .map((n: string) => n[0])
-                          .join("")
-                          .toUpperCase()
-                      : "U"}
-                  </ResponsiveText>
-                )}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.profileButton}
+                  onPress={() => {
+                    router.push("/(dashboard)/(user)/profile");
+                  }}
+                >
+                  {user?.avatar ? (
+                    <Image
+                      source={{ uri: (user as any).avatar }}
+                      style={styles.profileImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <ResponsiveText
+                      variant="buttonSmall"
+                      weight="bold"
+                      color={COLORS.black}
+                    >
+                      {(user as any)?.name
+                        ? (user as any).name
+                            .split(" ")
+                            .map((n: string) => n[0])
+                            .join("")
+                            .toUpperCase()
+                        : "U"}
+                    </ResponsiveText>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <TouchableOpacity
+                style={styles.searchBar}
+                onPress={handleSearchPress}
+              >
+                <Ionicons
+                  name="search"
+                  size={20}
+                  color={COLORS.text.light}
+                  style={styles.searchIcon}
+                />
+                <ResponsiveText variant="body2" color={COLORS.text.light}>
+                  Search & Shop Anywhere
+                </ResponsiveText>
               </TouchableOpacity>
             </View>
-          </View>
+          </LinearGradient>
 
-          {/* Search Bar */}
-          <View style={styles.searchContainer}>
-            <TouchableOpacity
-              style={styles.searchBar}
-              onPress={handleSearchPress}
-            >
-              <Ionicons
-                name="search"
-                size={20}
-                color={COLORS.text.light}
-                style={styles.searchIcon}
-              />
-              <ResponsiveText variant="body2" color={COLORS.text.light}>
-                Search & Shop Anywhere
-              </ResponsiveText>
-            </TouchableOpacity>
-          </View>
-        </LinearGradient>
+          {/* Main Content */}
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* My Favorite Services Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <ResponsiveText
+                  variant="h4"
+                  weight="bold"
+                  color={COLORS.text.primary}
+                >
+                  My Favorite Services
+                </ResponsiveText>
+                <TouchableOpacity>
+                  <ResponsiveText variant="body2" color={COLORS.text.secondary}>
+                    See more
+                  </ResponsiveText>
+                </TouchableOpacity>
+              </View>
 
-        {/* Main Content */}
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* My Favorite Services Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.favoriteServicesContainer}
+              >
+                {favoriteServices.map((service) => {
+                  return (
+                    <TouchableOpacity
+                      key={service.id}
+                      style={styles.favoriteServiceCard}
+                    >
+                      <View style={styles.serviceImageContainer}>
+                        <Image
+                          source={service.image}
+                          style={styles.serviceImage}
+                          resizeMode="cover"
+                        />
+                        <View
+                          style={[
+                            styles.serviceOverlay,
+                            { backgroundColor: service.color },
+                          ]}
+                        >
+                          <ResponsiveText
+                            variant="body2"
+                            weight="bold"
+                            color={COLORS.white}
+                          >
+                            {service.title}
+                          </ResponsiveText>
+                        </View>
+                      </View>
+                      <ResponsiveText
+                        variant="caption1"
+                        weight="medium"
+                        color={COLORS.text.primary}
+                        style={styles.serviceTitle}
+                      >
+                        {service.title}
+                      </ResponsiveText>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* Service Categories Grid */}
+            <View style={styles.section}>
+              <View style={styles.categoriesGrid}>
+                {serviceCategories.map((category) => {
+                  return (
+                    <TouchableOpacity
+                      key={category.id}
+                      style={styles.categoryItem}
+                    >
+                      <View
+                        style={[
+                          styles.categoryIcon,
+                          { backgroundColor: category.color },
+                        ]}
+                      >
+                        <Ionicons
+                          name={category.icon as any}
+                          size={24}
+                          color={COLORS.white}
+                        />
+                      </View>
+                      <ResponsiveText
+                        variant="caption1"
+                        weight="medium"
+                        color={COLORS.text.primary}
+                        style={styles.categoryTitle}
+                      >
+                        {category.title}
+                      </ResponsiveText>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* View More Button */}
+            <View style={styles.viewMoreContainer}>
+              <TouchableOpacity style={styles.viewMoreButton}>
+                <ResponsiveText
+                  variant="body2"
+                  weight="medium"
+                  color={COLORS.text.secondary}
+                >
+                  View more
+                </ResponsiveText>
+                <Ionicons
+                  name="chevron-down"
+                  size={16}
+                  color={COLORS.text.secondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Additional Content for Scrolling Test */}
+            <View style={styles.section}>
               <ResponsiveText
                 variant="h4"
                 weight="bold"
                 color={COLORS.text.primary}
+                style={styles.sectionTitle}
               >
-                My Favorite Services
+                Recent Activities
               </ResponsiveText>
-              <TouchableOpacity>
+              <View style={styles.activityItem}>
                 <ResponsiveText variant="body2" color={COLORS.text.secondary}>
-                  See more
+                  • You booked a fitness session yesterday
                 </ResponsiveText>
-              </TouchableOpacity>
+              </View>
+              <View style={styles.activityItem}>
+                <ResponsiveText variant="body2" color={COLORS.text.secondary}>
+                  • New travel deals available for you
+                </ResponsiveText>
+              </View>
+              <View style={styles.activityItem}>
+                <ResponsiveText variant="body2" color={COLORS.text.secondary}>
+                  • Health checkup reminder for next week
+                </ResponsiveText>
+              </View>
             </View>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.favoriteServicesContainer}
-            >
-              {favoriteServices.map((service) => {
-                console.log(
-                  "UserHomeScreen: Mapping favorite service:",
-                  service
-                );
-                return (
-                  <TouchableOpacity
-                    key={service.id}
-                    style={styles.favoriteServiceCard}
-                  >
-                    <View style={styles.serviceImageContainer}>
-                      <Image
-                        source={service.image}
-                        style={styles.serviceImage}
-                        resizeMode="cover"
-                      />
-                      <View
-                        style={[
-                          styles.serviceOverlay,
-                          { backgroundColor: service.color },
-                        ]}
-                      >
-                        <ResponsiveText
-                          variant="body2"
-                          weight="bold"
-                          color={COLORS.white}
-                        >
-                          {service.title}
-                        </ResponsiveText>
-                      </View>
-                    </View>
-                    <ResponsiveText
-                      variant="caption1"
-                      weight="medium"
-                      color={COLORS.text.primary}
-                      style={styles.serviceTitle}
-                    >
-                      {service.title}
-                    </ResponsiveText>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-
-          {/* Service Categories Grid */}
-          <View style={styles.section}>
-            <View style={styles.categoriesGrid}>
-              {serviceCategories.map((category) => {
-                console.log(
-                  "UserHomeScreen: Mapping service category:",
-                  category
-                );
-                return (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={styles.categoryItem}
-                  >
-                    <View
-                      style={[
-                        styles.categoryIcon,
-                        { backgroundColor: category.color },
-                      ]}
-                    >
-                      <Ionicons
-                        name={category.icon as any}
-                        size={24}
-                        color={COLORS.white}
-                      />
-                    </View>
-                    <ResponsiveText
-                      variant="caption1"
-                      weight="medium"
-                      color={COLORS.text.primary}
-                      style={styles.categoryTitle}
-                    >
-                      {category.title}
-                    </ResponsiveText>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* View More Button */}
-          <View style={styles.viewMoreContainer}>
-            <TouchableOpacity style={styles.viewMoreButton}>
+            <View style={styles.section}>
+              <ResponsiveText
+                variant="h4"
+                weight="bold"
+                color={COLORS.text.primary}
+                style={styles.sectionTitle}
+              >
+                App Features
+              </ResponsiveText>
               <ResponsiveText
                 variant="body2"
-                weight="medium"
                 color={COLORS.text.secondary}
+                style={styles.featureText}
               >
-                View more
+                Discover amazing services, book appointments, and manage your
+                activities all in one place. Our app provides a seamless
+                experience for all your needs.
               </ResponsiveText>
-              <Ionicons
-                name="chevron-down"
-                size={16}
+            </View>
+
+            <View style={styles.section}>
+              <ResponsiveText
+                variant="h4"
+                weight="bold"
+                color={COLORS.text.primary}
+                style={styles.sectionTitle}
+              >
+                Customer Support
+              </ResponsiveText>
+              <ResponsiveText
+                variant="body2"
                 color={COLORS.text.secondary}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Additional Content for Scrolling Test */}
-          <View style={styles.section}>
-            <ResponsiveText
-              variant="h4"
-              weight="bold"
-              color={COLORS.text.primary}
-              style={styles.sectionTitle}
-            >
-              Recent Activities
-            </ResponsiveText>
-            <View style={styles.activityItem}>
-              <ResponsiveText variant="body2" color={COLORS.text.secondary}>
-                • You booked a fitness session yesterday
+                style={styles.featureText}
+              >
+                Need help? Our support team is available 24/7 to assist you with
+                any questions or concerns. Contact us through the app or call
+                our helpline.
               </ResponsiveText>
             </View>
-            <View style={styles.activityItem}>
-              <ResponsiveText variant="body2" color={COLORS.text.secondary}>
-                • New travel deals available for you
+
+            <View style={styles.section}>
+              <ResponsiveText
+                variant="h4"
+                weight="bold"
+                color={COLORS.text.primary}
+                style={styles.sectionTitle}
+              >
+                Privacy & Security
+              </ResponsiveText>
+              <ResponsiveText
+                variant="body2"
+                color={COLORS.text.secondary}
+                style={styles.featureText}
+              >
+                Your privacy and security are our top priorities. All your data
+                is encrypted and protected according to industry standards. We
+                never share your personal information with third parties.
               </ResponsiveText>
             </View>
-            <View style={styles.activityItem}>
-              <ResponsiveText variant="body2" color={COLORS.text.secondary}>
-                • Health checkup reminder for next week
+
+            <View style={styles.section}>
+              <ResponsiveText
+                variant="h4"
+                weight="bold"
+                color={COLORS.text.primary}
+                style={styles.sectionTitle}
+              >
+                Terms of Service
+              </ResponsiveText>
+              <ResponsiveText
+                variant="body2"
+                color={COLORS.text.secondary}
+                style={styles.featureText}
+              >
+                By using this app, you agree to our terms of service and privacy
+                policy. Please read them carefully before proceeding with any
+                transactions or bookings.
               </ResponsiveText>
             </View>
-          </View>
 
-          <View style={styles.section}>
-            <ResponsiveText
-              variant="h4"
-              weight="bold"
-              color={COLORS.text.primary}
-              style={styles.sectionTitle}
-            >
-              App Features
-            </ResponsiveText>
-            <ResponsiveText
-              variant="body2"
-              color={COLORS.text.secondary}
-              style={styles.featureText}
-            >
-              Discover amazing services, book appointments, and manage your
-              activities all in one place. Our app provides a seamless
-              experience for all your needs.
-            </ResponsiveText>
-          </View>
-
-          <View style={styles.section}>
-            <ResponsiveText
-              variant="h4"
-              weight="bold"
-              color={COLORS.text.primary}
-              style={styles.sectionTitle}
-            >
-              Customer Support
-            </ResponsiveText>
-            <ResponsiveText
-              variant="body2"
-              color={COLORS.text.secondary}
-              style={styles.featureText}
-            >
-              Need help? Our support team is available 24/7 to assist you with
-              any questions or concerns. Contact us through the app or call our
-              helpline.
-            </ResponsiveText>
-          </View>
-
-          <View style={styles.section}>
-            <ResponsiveText
-              variant="h4"
-              weight="bold"
-              color={COLORS.text.primary}
-              style={styles.sectionTitle}
-            >
-              Privacy & Security
-            </ResponsiveText>
-            <ResponsiveText
-              variant="body2"
-              color={COLORS.text.secondary}
-              style={styles.featureText}
-            >
-              Your privacy and security are our top priorities. All your data is
-              encrypted and protected according to industry standards. We never
-              share your personal information with third parties.
-            </ResponsiveText>
-          </View>
-
-          <View style={styles.section}>
-            <ResponsiveText
-              variant="h4"
-              weight="bold"
-              color={COLORS.text.primary}
-              style={styles.sectionTitle}
-            >
-              Terms of Service
-            </ResponsiveText>
-            <ResponsiveText
-              variant="body2"
-              color={COLORS.text.secondary}
-              style={styles.featureText}
-            >
-              By using this app, you agree to our terms of service and privacy
-              policy. Please read them carefully before proceeding with any
-              transactions or bookings.
-            </ResponsiveText>
-          </View>
-
-          {/* Bottom Spacing */}
-          <View style={styles.bottomSpacing} />
-        </ScrollView>
-      </View>
-    </SafeAreaView>
+            {/* Bottom Spacing */}
+            <View style={styles.bottomSpacing} />
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    </>
   );
 }
 

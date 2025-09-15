@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet, ViewStyle } from "react-native";
-import { ResponsiveText, BackButton } from "@/components";
+import { ResponsiveText } from "./ResponsiveText";
+import { BackButton } from "../BackButton";
 import { COLORS, MARGIN, PADDING } from "@/constants";
 
 interface AppHeaderProps {

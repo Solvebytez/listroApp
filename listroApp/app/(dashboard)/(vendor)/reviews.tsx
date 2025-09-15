@@ -15,7 +15,7 @@ import {
   ResponsiveText,
   ResponsiveCard,
   GlobalStatusBar,
-  BackButton,
+  AppHeader,
   ReviewDetailsModal,
 } from "../../../components";
 import ReviewItem from "../../../components/vendor/ReviewItem";
@@ -162,36 +162,27 @@ export default function ReviewsScreen() {
 
   return (
     <>
-      <GlobalStatusBar />
-      <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+      <GlobalStatusBar
+        barStyle="light-content"
+        backgroundColor={COLORS.primary[500]}
+        translucent={false}
+      />
+      <SafeAreaView style={styles.safeArea} edges={["left", "right"]}>
         <View style={styles.container}>
-          {/* Header with Solid Background */}
-          <View style={styles.headerSolid}>
-            {/* Top Navigation */}
-            <View style={styles.topNavigation}>
-              <BackButton
-                onPress={() => router.back()}
-                variant="default"
-                size="medium"
-                showText={false}
-                showIcon={true}
-                iconName="arrow-back"
-              />
-              <View style={styles.titleContainer}>
-                <ResponsiveText variant="h5" weight="bold" color={COLORS.white}>
-                  Rating & Reviews
-                </ResponsiveText>
-                <ResponsiveText
-                  variant="body2"
-                  color={COLORS.white}
-                  style={styles.reviewCount}
-                >
-                  6 reviews
-                </ResponsiveText>
-              </View>
-              <View style={styles.headerPlaceholder} />
-            </View>
-          </View>
+          {/* Header */}
+          <AppHeader
+            onBackPress={() => router.back()}
+            title="Rating & Reviews"
+            rightComponent={
+              <ResponsiveText
+                variant="body2"
+                color={COLORS.white}
+                style={styles.reviewCount}
+              >
+                6 reviews
+              </ResponsiveText>
+            }
+          />
 
           <ScrollView
             style={styles.content}
@@ -393,32 +384,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background.primary,
   },
-  headerSolid: {
-    backgroundColor: COLORS.primary[200],
-    paddingTop: MARGIN.sm,
-    paddingBottom: MARGIN.md - 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border.light,
-  },
-  topNavigation: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: PADDING.screen,
-    paddingTop: MARGIN.sm,
-    marginBottom: MARGIN.sm,
-    minHeight: 60,
-  },
-  titleContainer: {
-    flex: 1,
-    alignItems: "center",
-  },
   reviewCount: {
     marginTop: MARGIN.xs,
     opacity: 0.9,
-  },
-  headerPlaceholder: {
-    width: 40,
   },
   content: {
     flex: 1,

@@ -14,7 +14,7 @@ import {
   ResponsiveText,
   ResponsiveCard,
   GlobalStatusBar,
-  BackButton,
+  AppHeader,
 } from "../../../components";
 import EnquiryItem from "../../../components/vendor/EnquiryItem";
 
@@ -124,28 +124,16 @@ export default function EnquiriesScreen() {
 
   return (
     <>
-      <GlobalStatusBar />
-      <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
-        <View style={styles.container}>
-          {/* Header with Solid Background */}
-          <View style={styles.headerSolid}>
-            {/* Top Navigation */}
-            <View style={styles.topNavigation}>
-              <BackButton
-                onPress={() => router.back()}
-                variant="default"
-                size="medium"
-                showText={false}
-                showIcon={true}
-                iconName="arrow-back"
-              />
-              <ResponsiveText variant="h5" weight="bold" color={COLORS.white}>
-                All Enquiries
-              </ResponsiveText>
-              <View style={styles.headerPlaceholder} />
-            </View>
-          </View>
+      <GlobalStatusBar
+        barStyle="light-content"
+        backgroundColor={COLORS.primary[500]}
+        translucent={false}
+      />
+      <SafeAreaView style={styles.safeArea} edges={["left", "right"]}>
+        {/* Header */}
+        <AppHeader onBackPress={() => router.back()} title="All Enquiries" />
 
+        <View style={styles.container}>
           {/* Content */}
           <ScrollView
             style={styles.content}
@@ -258,22 +246,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-  },
-  headerSolid: {
-    backgroundColor: COLORS.primary[200],
-    paddingTop: MARGIN.sm,
-    paddingBottom: MARGIN.md - 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border.light,
-  },
-  topNavigation: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: PADDING.screen,
-  },
-  headerPlaceholder: {
-    width: 40,
   },
   content: {
     flex: 1,

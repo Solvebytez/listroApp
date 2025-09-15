@@ -18,10 +18,10 @@ import {
   SPACING,
   BORDER_RADIUS,
 } from "../../../constants";
+import { GlobalStatusBar } from "../../../components/StatusBar";
 import {
   ResponsiveText,
   ResponsiveCard,
-  GlobalStatusBar,
   VendorMetricsCards,
   RecentEnquiries,
   LatestReviews,
@@ -32,7 +32,6 @@ import { userService, UserProfile } from "../../../services/user";
 import { useUser } from "../../../hooks/useUser";
 
 export default function VendorDashboardScreen() {
-  console.log("VendorDashboardScreen: Component rendering");
   const router = useRouter();
   const [selectedReview, setSelectedReview] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -159,7 +158,7 @@ export default function VendorDashboardScreen() {
   return (
     <>
       <GlobalStatusBar />
-      <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+      <SafeAreaView style={styles.safeArea} edges={["left", "right"]}>
         <View style={styles.container}>
           {/* Header Section with Gradient */}
           <LinearGradient
@@ -257,7 +256,6 @@ export default function VendorDashboardScreen() {
               onViewAll={() => router.push("/(dashboard)/(vendor)/enquiries")}
               onEnquiryPress={(enquiry) => {
                 // Handle enquiry press - could navigate to enquiry details
-                console.log("Enquiry pressed:", enquiry);
               }}
             />
 
@@ -271,7 +269,6 @@ export default function VendorDashboardScreen() {
               }}
               onHelpful={(review) => {
                 // Handle helpful action
-                console.log("Helpful pressed for review:", review.id);
               }}
             />
 

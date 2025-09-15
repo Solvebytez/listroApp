@@ -34,13 +34,8 @@ const addAuthInterceptor = (instance: AxiosInstance) => {
     async (config: InternalAxiosRequestConfig) => {
       try {
         const token = await AsyncStorage.getItem("accessToken");
-        console.log("API Interceptor: Token exists:", !!token);
-        console.log("API Interceptor: Request URL:", config.url);
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
-          console.log("API Interceptor: Authorization header added");
-        } else {
-          console.log("API Interceptor: No token or headers, skipping auth");
         }
       } catch (error) {
         console.error("Error getting token:", error);

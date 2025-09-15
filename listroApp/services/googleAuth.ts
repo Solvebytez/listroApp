@@ -60,7 +60,6 @@ class GoogleAuthService {
       await GoogleSignin.configure(configureOptions);
 
       this.isConfigured = true;
-      console.log("Google Sign-In configured successfully");
     } catch (error) {
       console.error("Error configuring Google Sign-In:", error);
       throw new Error("Failed to configure Google Sign-In");
@@ -120,10 +119,6 @@ class GoogleAuthService {
       // Sign in
       const userInfo = await GoogleSignin.signIn();
 
-      console.log(
-        "Google Sign-In response:",
-        JSON.stringify(userInfo, null, 2)
-      );
 
       if (!isSuccessResponse(userInfo)) {
         throw new Error("Google Sign-In failed");
@@ -139,7 +134,6 @@ class GoogleAuthService {
         familyName: userInfo.data.user.familyName || undefined,
       };
 
-      console.log("Google Sign-In successful:", userData);
       return userData;
     } catch (error: any) {
       console.error("Google Sign-In error:", error);
@@ -165,7 +159,6 @@ class GoogleAuthService {
   signOut = async (): Promise<void> => {
     try {
       await GoogleSignin.signOut();
-      console.log("Google Sign-Out successful");
     } catch (error) {
       console.error("Google Sign-Out error:", error);
       throw new Error("Failed to sign out from Google");
@@ -216,7 +209,6 @@ class GoogleAuthService {
   revokeAccess = async (): Promise<void> => {
     try {
       await GoogleSignin.revokeAccess();
-      console.log("Google access revoked successfully");
     } catch (error) {
       console.error("Error revoking Google access:", error);
       throw new Error("Failed to revoke Google access");
