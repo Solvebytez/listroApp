@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api } from "../services/api";
 
 export interface UserData {
@@ -28,7 +29,19 @@ export const useUser = () => {
         (response.data as any).success &&
         (response.data as any).data
       ) {
-        return (response.data as any).data;
+        const userData = (response.data as any).data;
+
+        // Store user data in AsyncStorage for use by other hooks (like useActivePromotions)
+        try {
+          await AsyncStorage.setItem("userData", JSON.stringify(userData));
+        } catch (storageError) {
+          console.error(
+            "Error storing userData in AsyncStorage:",
+            storageError
+          );
+        }
+
+        return userData;
       }
 
       throw new Error("Failed to fetch user data");

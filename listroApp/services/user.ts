@@ -46,6 +46,62 @@ export interface UpdateBusinessAddressData {
   description?: string;
 }
 
+// User Favorites interfaces
+export interface UserFavorite {
+  id: string;
+  userId: string;
+  serviceListingId: string;
+  createdAt: string;
+  updatedAt: string;
+  serviceListing: {
+    id: string;
+    title: string;
+    description: string;
+    image?: string;
+    rating: number;
+    totalReviews: number;
+    category: {
+      id: string;
+      name: string;
+      slug: string;
+    };
+    vendor: {
+      id: string;
+      businessName: string;
+      businessEmail: string;
+      businessPhone: string;
+      rating: number;
+    };
+    address: {
+      id: string;
+      name: string;
+      address: string;
+      city: string;
+      state: string;
+    };
+  };
+}
+
+export interface UserFavoritesResponse {
+  data: UserFavorite[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    limit: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+export interface FavoriteStatusResponse {
+  data: {
+    isFavorite: boolean;
+    favoriteId: string | null;
+    addedAt: string | null;
+  };
+}
+
 // User service functions
 export const userService = {
   // Get user profile
@@ -85,13 +141,20 @@ export const userService = {
 
   // Get all business addresses
   getBusinessAddresses: async (): Promise<BusinessAddress[]> => {
-    const response = await api.get<{ data: BusinessAddress[] }>("/users/business-addresses");
+    const response = await api.get<{ data: BusinessAddress[] }>(
+      "/users/business-addresses"
+    );
     return response.data.data;
   },
 
   // Create new business address
-  createBusinessAddress: async (data: Omit<BusinessAddress, 'id' | 'createdAt' | 'updatedAt'>): Promise<BusinessAddress> => {
-    const response = await api.post<{ data: BusinessAddress }>("/users/business-addresses", data);
+  createBusinessAddress: async (
+    data: Omit<BusinessAddress, "id" | "createdAt" | "updatedAt">
+  ): Promise<BusinessAddress> => {
+    const response = await api.post<{ data: BusinessAddress }>(
+      "/users/business-addresses",
+      data
+    );
     return response.data.data;
   },
 
@@ -110,6 +173,52 @@ export const userService = {
   // Delete business address
   deleteBusinessAddress: async (addressId: string) => {
     const response = await api.delete(`/users/business-addresses/${addressId}`);
+    return response.data;
+  },
+
+  // User Favorites methods
+  // Get user's favorite service listings
+  getUserFavorites: async (
+    userId: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<UserFavoritesResponse> => {
+    const response = await api.get<UserFavoritesResponse>(
+      `/users/${userId}/favorites`,
+      {
+        params: { page, limit },
+      }
+    );
+    return response.data;
+  },
+
+  // Add service to favorites
+  addToFavorites: async (
+    userId: string,
+    serviceId: string
+  ): Promise<UserFavorite> => {
+    const response = await api.post<{ data: UserFavorite }>(
+      `/users/${userId}/favorites/${serviceId}`
+    );
+    return response.data.data;
+  },
+
+  // Remove service from favorites
+  removeFromFavorites: async (userId: string, serviceId: string) => {
+    const response = await api.delete(
+      `/users/${userId}/favorites/${serviceId}`
+    );
+    return response.data;
+  },
+
+  // Check if service is in favorites
+  checkFavoriteStatus: async (
+    userId: string,
+    serviceId: string
+  ): Promise<FavoriteStatusResponse> => {
+    const response = await api.get<FavoriteStatusResponse>(
+      `/users/${userId}/favorites/${serviceId}/status`
+    );
     return response.data;
   },
 };

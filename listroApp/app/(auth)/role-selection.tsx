@@ -2,6 +2,7 @@ import { View, Image, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { ResponsiveText, ResponsiveCard, GlobalStatusBar } from "@/components";
+import { SessionExpiryAlert } from "@/components/common/SessionExpiryAlert";
 import { SPACING, PADDING, MARGIN, COLORS } from "@/constants";
 
 export default function RoleSelectionScreen() {
@@ -46,6 +47,7 @@ export default function RoleSelectionScreen() {
   return (
     <>
       <GlobalStatusBar />
+      <SessionExpiryAlert />
       <View style={{ flex: 1 }}>
         <LinearGradient
           colors={[COLORS.primary[200], "#E0F7FF", COLORS.background.primary]}

@@ -66,7 +66,19 @@ const userProfileSchema = yup.object({
   primaryAddress: yup.string(),
   primaryCity: yup.string(),
   primaryState: yup.string(),
-  primaryZipCode: yup.string(),
+  primaryZipCode: yup
+    .string()
+    .test(
+      "indian-zipcode",
+      "Please enter a valid Indian PIN code (6 digits)",
+      (value) => {
+        if (!value) return true; // Optional field
+
+        // Indian PIN code validation: 6 digits
+        const indianZipCodeRegex = /^[1-9][0-9]{5}$/;
+        return indianZipCodeRegex.test(value);
+      }
+    ),
   primaryCountry: yup.string(),
 });
 
@@ -150,367 +162,387 @@ export default function UserEditProfileScreen() {
 
   return (
     <>
-      <GlobalStatusBar />
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <AppHeader onBackPress={handleCancel} title="Edit Profile" />
+      <GlobalStatusBar
+        barStyle="light-content"
+        backgroundColor={COLORS.primary[500]}
+        translucent={false}
+      />
+      <SafeAreaView style={styles.safeArea} edges={["left", "right"]}>
+        <View style={styles.container}>
+          {/* Header */}
+          <AppHeader onBackPress={handleCancel} title="Edit Profile" />
 
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Profile Picture Section */}
-          <ResponsiveCard variant="elevated" style={styles.profileCard}>
-            <View style={styles.profilePictureSection}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Profile Picture Section */}
+            <ResponsiveCard variant="elevated" style={styles.profileCard}>
+              <View style={styles.profilePictureSection}>
+                <ResponsiveText
+                  variant="h6"
+                  weight="bold"
+                  color={COLORS.text.primary}
+                  style={styles.sectionTitle}
+                >
+                  Profile Picture
+                </ResponsiveText>
+
+                <ProfilePictureUpload
+                  currentAvatar={profileData?.avatar}
+                  size={100}
+                  showHint={true}
+                  onUploadStateChange={setIsProfilePictureUploading}
+                />
+              </View>
+            </ResponsiveCard>
+
+            {/* Personal Information Form */}
+            <ResponsiveCard variant="elevated" style={styles.formCard}>
               <ResponsiveText
                 variant="h6"
                 weight="bold"
                 color={COLORS.text.primary}
                 style={styles.sectionTitle}
               >
-                Profile Picture
+                Personal Information
               </ResponsiveText>
 
-              <ProfilePictureUpload
-                currentAvatar={profileData?.avatar}
-                size={100}
-                showHint={true}
-                onUploadStateChange={setIsProfilePictureUploading}
-              />
-            </View>
-          </ResponsiveCard>
+              {/* Name Field */}
+              <View style={styles.inputGroup}>
+                <ResponsiveText
+                  variant="inputLabel"
+                  weight="medium"
+                  color={COLORS.text.primary}
+                  style={styles.inputLabel}
+                >
+                  Full Name *
+                </ResponsiveText>
+                <Controller
+                  control={control}
+                  name="name"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={[
+                        styles.textInput,
+                        errors.name && styles.inputError,
+                      ]}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                      placeholder="Enter your full name"
+                      placeholderTextColor={COLORS.text.secondary}
+                    />
+                  )}
+                />
+                {errors.name && (
+                  <ResponsiveText
+                    variant="inputHelper"
+                    color={COLORS.error[500]}
+                  >
+                    {errors.name.message}
+                  </ResponsiveText>
+                )}
+              </View>
 
-          {/* Personal Information Form */}
-          <ResponsiveCard variant="elevated" style={styles.formCard}>
-            <ResponsiveText
-              variant="h6"
-              weight="bold"
-              color={COLORS.text.primary}
-              style={styles.sectionTitle}
-            >
-              Personal Information
-            </ResponsiveText>
+              {/* Email Display (Read-only) */}
+              <View style={styles.inputGroup}>
+                <ResponsiveText
+                  variant="inputLabel"
+                  weight="medium"
+                  color={COLORS.text.primary}
+                  style={styles.inputLabel}
+                >
+                  Email Address
+                </ResponsiveText>
+                <View style={[styles.textInput, styles.readOnlyInput]}>
+                  <ResponsiveText
+                    variant="body1"
+                    color={COLORS.text.primary}
+                    style={styles.readOnlyText}
+                  >
+                    {profileData && isUserProfile(profileData)
+                      ? profileData.email
+                      : ""}
+                  </ResponsiveText>
+                </View>
+                <ResponsiveText
+                  variant="inputHelper"
+                  color={COLORS.error[500]}
+                  style={styles.helperText}
+                >
+                  Email cannot be updated from profile settings
+                </ResponsiveText>
+              </View>
 
-            {/* Name Field */}
-            <View style={styles.inputGroup}>
-              <ResponsiveText
-                variant="inputLabel"
-                weight="medium"
-                color={COLORS.text.primary}
-                style={styles.inputLabel}
-              >
-                Full Name *
-              </ResponsiveText>
-              <Controller
-                control={control}
-                name="name"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[styles.textInput, errors.name && styles.inputError]}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                    placeholder="Enter your full name"
-                    placeholderTextColor={COLORS.text.secondary}
+              {/* Phone Field */}
+              <View style={styles.inputGroup}>
+                <ResponsiveText
+                  variant="inputLabel"
+                  weight="medium"
+                  color={COLORS.text.primary}
+                  style={styles.inputLabel}
+                >
+                  Phone Number
+                </ResponsiveText>
+                <Controller
+                  control={control}
+                  name="phone"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={[
+                        styles.textInput,
+                        errors.phone && styles.inputError,
+                      ]}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                      placeholder="Enter your phone number"
+                      placeholderTextColor={COLORS.text.secondary}
+                      keyboardType="phone-pad"
+                    />
+                  )}
+                />
+                {errors.phone && (
+                  <ResponsiveText
+                    variant="inputHelper"
+                    color={COLORS.error[500]}
+                  >
+                    {errors.phone.message}
+                  </ResponsiveText>
+                )}
+              </View>
+
+              {/* City, State, Zip Code Row */}
+              <View style={styles.rowContainer}>
+                <View style={[styles.inputGroup, styles.flex1]}>
+                  <ResponsiveText
+                    variant="inputLabel"
+                    weight="medium"
+                    color={COLORS.text.primary}
+                    style={styles.inputLabel}
+                  >
+                    City
+                  </ResponsiveText>
+                  <Controller
+                    control={control}
+                    name="primaryCity"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        style={[
+                          styles.textInput,
+                          errors.primaryCity && styles.inputError,
+                        ]}
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                        value={value}
+                        placeholder="City"
+                        placeholderTextColor={COLORS.text.secondary}
+                      />
+                    )}
                   />
-                )}
-              />
-              {errors.name && (
-                <ResponsiveText variant="inputHelper" color={COLORS.error[500]}>
-                  {errors.name.message}
-                </ResponsiveText>
-              )}
-            </View>
+                  {errors.primaryCity && (
+                    <ResponsiveText
+                      variant="inputHelper"
+                      color={COLORS.error[500]}
+                    >
+                      {errors.primaryCity.message}
+                    </ResponsiveText>
+                  )}
+                </View>
 
-            {/* Email Display (Read-only) */}
-            <View style={styles.inputGroup}>
-              <ResponsiveText
-                variant="inputLabel"
-                weight="medium"
-                color={COLORS.text.primary}
-                style={styles.inputLabel}
-              >
-                Email Address
-              </ResponsiveText>
-              <View style={[styles.textInput, styles.readOnlyInput]}>
-                <ResponsiveText
-                  variant="body1"
-                  color={COLORS.text.primary}
-                  style={styles.readOnlyText}
+                <View
+                  style={[styles.inputGroup, styles.flex1, { marginLeft: 10 }]}
                 >
-                  {profileData && isUserProfile(profileData)
-                    ? profileData.email
-                    : ""}
-                </ResponsiveText>
-              </View>
-              <ResponsiveText
-                variant="inputHelper"
-                color={COLORS.error[500]}
-                style={styles.helperText}
-              >
-                Email cannot be updated from profile settings
-              </ResponsiveText>
-            </View>
-
-            {/* Phone Field */}
-            <View style={styles.inputGroup}>
-              <ResponsiveText
-                variant="inputLabel"
-                weight="medium"
-                color={COLORS.text.primary}
-                style={styles.inputLabel}
-              >
-                Phone Number
-              </ResponsiveText>
-              <Controller
-                control={control}
-                name="phone"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[
-                      styles.textInput,
-                      errors.phone && styles.inputError,
-                    ]}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                    placeholder="Enter your phone number"
-                    placeholderTextColor={COLORS.text.secondary}
-                    keyboardType="phone-pad"
+                  <ResponsiveText
+                    variant="inputLabel"
+                    weight="medium"
+                    color={COLORS.text.primary}
+                    style={styles.inputLabel}
+                  >
+                    State
+                  </ResponsiveText>
+                  <Controller
+                    control={control}
+                    name="primaryState"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        style={[
+                          styles.textInput,
+                          errors.primaryState && styles.inputError,
+                        ]}
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                        value={value}
+                        placeholder="State"
+                        placeholderTextColor={COLORS.text.secondary}
+                      />
+                    )}
                   />
-                )}
-              />
-              {errors.phone && (
-                <ResponsiveText variant="inputHelper" color={COLORS.error[500]}>
-                  {errors.phone.message}
-                </ResponsiveText>
-              )}
-            </View>
-
-            {/* City, State, Zip Code Row */}
-            <View style={styles.rowContainer}>
-              <View style={[styles.inputGroup, styles.flex1]}>
-                <ResponsiveText
-                  variant="inputLabel"
-                  weight="medium"
-                  color={COLORS.text.primary}
-                  style={styles.inputLabel}
-                >
-                  City
-                </ResponsiveText>
-                <Controller
-                  control={control}
-                  name="primaryCity"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput
-                      style={[
-                        styles.textInput,
-                        errors.primaryCity && styles.inputError,
-                      ]}
-                      onBlur={onBlur}
-                      onChangeText={onChange}
-                      value={value}
-                      placeholder="City"
-                      placeholderTextColor={COLORS.text.secondary}
-                    />
+                  {errors.primaryState && (
+                    <ResponsiveText
+                      variant="inputHelper"
+                      color={COLORS.error[500]}
+                    >
+                      {errors.primaryState.message}
+                    </ResponsiveText>
                   )}
-                />
-                {errors.primaryCity && (
-                  <ResponsiveText
-                    variant="inputHelper"
-                    color={COLORS.error[500]}
-                  >
-                    {errors.primaryCity.message}
-                  </ResponsiveText>
-                )}
+                </View>
               </View>
 
-              <View
-                style={[styles.inputGroup, styles.flex1, { marginLeft: 10 }]}
-              >
-                <ResponsiveText
-                  variant="inputLabel"
-                  weight="medium"
-                  color={COLORS.text.primary}
-                  style={styles.inputLabel}
-                >
-                  State
-                </ResponsiveText>
-                <Controller
-                  control={control}
-                  name="primaryState"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput
-                      style={[
-                        styles.textInput,
-                        errors.primaryState && styles.inputError,
-                      ]}
-                      onBlur={onBlur}
-                      onChangeText={onChange}
-                      value={value}
-                      placeholder="State"
-                      placeholderTextColor={COLORS.text.secondary}
-                    />
-                  )}
-                />
-                {errors.primaryState && (
+              {/* Zip Code and Country Row */}
+              <View style={styles.rowContainer}>
+                <View style={[styles.inputGroup, styles.flex1]}>
                   <ResponsiveText
-                    variant="inputHelper"
-                    color={COLORS.error[500]}
+                    variant="inputLabel"
+                    weight="medium"
+                    color={COLORS.text.primary}
+                    style={styles.inputLabel}
                   >
-                    {errors.primaryState.message}
+                    Zip Code
                   </ResponsiveText>
-                )}
-              </View>
-            </View>
-
-            {/* Zip Code and Country Row */}
-            <View style={styles.rowContainer}>
-              <View style={[styles.inputGroup, styles.flex1]}>
-                <ResponsiveText
-                  variant="inputLabel"
-                  weight="medium"
-                  color={COLORS.text.primary}
-                  style={styles.inputLabel}
-                >
-                  Zip Code
-                </ResponsiveText>
-                <Controller
-                  control={control}
-                  name="primaryZipCode"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput
-                      style={[
-                        styles.textInput,
-                        errors.primaryZipCode && styles.inputError,
-                      ]}
-                      onBlur={onBlur}
-                      onChangeText={onChange}
-                      value={value}
-                      placeholder="Zip Code"
-                      placeholderTextColor={COLORS.text.secondary}
-                    />
-                  )}
-                />
-                {errors.primaryZipCode && (
-                  <ResponsiveText
-                    variant="inputHelper"
-                    color={COLORS.error[500]}
-                  >
-                    {errors.primaryZipCode.message}
-                  </ResponsiveText>
-                )}
-              </View>
-
-              <View
-                style={[styles.inputGroup, styles.flex1, { marginLeft: 10 }]}
-              >
-                <ResponsiveText
-                  variant="inputLabel"
-                  weight="medium"
-                  color={COLORS.text.primary}
-                  style={styles.inputLabel}
-                >
-                  Country
-                </ResponsiveText>
-                <Controller
-                  control={control}
-                  name="primaryCountry"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput
-                      style={[
-                        styles.textInput,
-                        errors.primaryCountry && styles.inputError,
-                      ]}
-                      onBlur={onBlur}
-                      onChangeText={onChange}
-                      value={value}
-                      placeholder="Country"
-                      placeholderTextColor={COLORS.text.secondary}
-                    />
-                  )}
-                />
-                {errors.primaryCountry && (
-                  <ResponsiveText
-                    variant="inputHelper"
-                    color={COLORS.error[500]}
-                  >
-                    {errors.primaryCountry.message}
-                  </ResponsiveText>
-                )}
-              </View>
-            </View>
-
-            {/* Landmark Field */}
-            <View style={styles.inputGroup}>
-              <ResponsiveText
-                variant="inputLabel"
-                weight="medium"
-                color={COLORS.text.primary}
-                style={styles.inputLabel}
-              >
-                Landmark
-              </ResponsiveText>
-              <Controller
-                control={control}
-                name="primaryAddress"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[
-                      styles.textInput,
-                      styles.textArea,
-                      errors.primaryAddress && styles.inputError,
-                    ]}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                    placeholder="Enter your landmark"
-                    placeholderTextColor={COLORS.text.secondary}
-                    multiline
-                    numberOfLines={2}
+                  <Controller
+                    control={control}
+                    name="primaryZipCode"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        style={[
+                          styles.textInput,
+                          errors.primaryZipCode && styles.inputError,
+                        ]}
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                        value={value}
+                        placeholder="123456"
+                        placeholderTextColor={COLORS.text.secondary}
+                        keyboardType="numeric"
+                        maxLength={6}
+                      />
+                    )}
                   />
-                )}
-              />
-              {errors.primaryAddress && (
-                <ResponsiveText variant="inputHelper" color={COLORS.error[500]}>
-                  {errors.primaryAddress.message}
+                  {errors.primaryZipCode && (
+                    <ResponsiveText
+                      variant="inputHelper"
+                      color={COLORS.error[500]}
+                    >
+                      {errors.primaryZipCode.message}
+                    </ResponsiveText>
+                  )}
+                </View>
+
+                <View
+                  style={[styles.inputGroup, styles.flex1, { marginLeft: 10 }]}
+                >
+                  <ResponsiveText
+                    variant="inputLabel"
+                    weight="medium"
+                    color={COLORS.text.primary}
+                    style={styles.inputLabel}
+                  >
+                    Country
+                  </ResponsiveText>
+                  <Controller
+                    control={control}
+                    name="primaryCountry"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        style={[
+                          styles.textInput,
+                          errors.primaryCountry && styles.inputError,
+                        ]}
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                        value={value}
+                        placeholder="Country"
+                        placeholderTextColor={COLORS.text.secondary}
+                      />
+                    )}
+                  />
+                  {errors.primaryCountry && (
+                    <ResponsiveText
+                      variant="inputHelper"
+                      color={COLORS.error[500]}
+                    >
+                      {errors.primaryCountry.message}
+                    </ResponsiveText>
+                  )}
+                </View>
+              </View>
+
+              {/* Landmark Field */}
+              <View style={styles.inputGroup}>
+                <ResponsiveText
+                  variant="inputLabel"
+                  weight="medium"
+                  color={COLORS.text.primary}
+                  style={styles.inputLabel}
+                >
+                  Landmark
                 </ResponsiveText>
-              )}
+                <Controller
+                  control={control}
+                  name="primaryAddress"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={[
+                        styles.textInput,
+                        styles.textArea,
+                        errors.primaryAddress && styles.inputError,
+                      ]}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                      placeholder="Enter your landmark"
+                      placeholderTextColor={COLORS.text.secondary}
+                      multiline
+                      numberOfLines={2}
+                    />
+                  )}
+                />
+                {errors.primaryAddress && (
+                  <ResponsiveText
+                    variant="inputHelper"
+                    color={COLORS.error[500]}
+                  >
+                    {errors.primaryAddress.message}
+                  </ResponsiveText>
+                )}
+              </View>
+            </ResponsiveCard>
+          </ScrollView>
+
+          {/* Fixed Footer Action Buttons */}
+          <View style={styles.fixedFooter}>
+            <View style={styles.buttonContainer}>
+              <ResponsiveButton
+                title="Cancel"
+                variant="outline"
+                size="medium"
+                onPress={handleCancel}
+                disabled={isProfilePictureUploading}
+                leftIcon={
+                  <Ionicons name="close" size={20} color={COLORS.error[500]} />
+                }
+                style={[styles.cancelButton, styles.halfWidthButton] as any}
+                textStyle={styles.cancelButtonText}
+              />
+
+              <ResponsiveButton
+                title={
+                  updateProfileMutation.isPending ? "Saving..." : "Save Changes"
+                }
+                variant="primary"
+                size="medium"
+                onPress={handleSubmit(onSubmit)}
+                disabled={
+                  updateProfileMutation.isPending ||
+                  isLoadingProfile ||
+                  isProfilePictureUploading
+                }
+                style={[styles.saveButton, styles.halfWidthButton] as any}
+              />
             </View>
-          </ResponsiveCard>
-        </ScrollView>
-
-        {/* Fixed Footer Action Buttons */}
-        <View style={styles.fixedFooter}>
-          <View style={styles.buttonContainer}>
-            <ResponsiveButton
-              title="Cancel"
-              variant="outline"
-              size="medium"
-              onPress={handleCancel}
-              disabled={isProfilePictureUploading}
-              leftIcon={
-                <Ionicons name="close" size={20} color={COLORS.error[500]} />
-              }
-              style={[styles.cancelButton, styles.halfWidthButton] as any}
-              textStyle={styles.cancelButtonText}
-            />
-
-            <ResponsiveButton
-              title={
-                updateProfileMutation.isPending ? "Saving..." : "Save Changes"
-              }
-              variant="primary"
-              size="medium"
-              onPress={handleSubmit(onSubmit)}
-              disabled={
-                updateProfileMutation.isPending ||
-                isLoadingProfile ||
-                isProfilePictureUploading
-              }
-              style={[styles.saveButton, styles.halfWidthButton] as any}
-            />
           </View>
         </View>
       </SafeAreaView>
@@ -519,6 +551,10 @@ export default function UserEditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.background.primary,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background.primary,

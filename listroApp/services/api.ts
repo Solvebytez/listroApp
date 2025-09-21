@@ -10,7 +10,7 @@ import { ENV, getApiUrl } from "@/config/env";
 
 // Create axios instance for v1 API routes
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: `${ENV.API_BASE_URL}/api/${ENV.API_VERSION}`,
+  baseURL: `${ENV.API_BASE_URL}/api/v1`, // Hardcoded to fix v11 issue
   timeout: ENV.API_TIMEOUT,
   headers: {
     "Content-Type": "application/json",
@@ -62,18 +62,34 @@ const addResponseInterceptor = (instance: AxiosInstance) => {
       // If 401, token is expired, clear it and redirect to login
       if (error.response?.status === 401) {
         try {
+          // Check if it's a session expiry due to login elsewhere
+          const errorMessage = (error.response?.data as any)?.message || "";
+          const isSessionExpiredElsewhere =
+            errorMessage.includes("logged in elsewhere") ||
+            errorMessage.includes("Session expired");
+
           // Clear all authentication data
           await AsyncStorage.multiRemove([
             "accessToken",
             "userRole",
             "userEmail",
             "userId",
+            "userData",
             "tokenTimestamp",
             "hasCompletedOnboarding",
           ]);
 
-          // Navigate to login screen
+          // Navigate to login screen with appropriate message
           const { router } = await import("expo-router");
+
+          if (isSessionExpiredElsewhere) {
+            // Store session expiry message for display
+            await AsyncStorage.setItem(
+              "sessionExpiredMessage",
+              "You have been logged out because you logged in on another device."
+            );
+          }
+
           router.replace("/(auth)/role-selection");
         } catch (clearError) {
           console.error("Error clearing authentication data:", clearError);

@@ -66,7 +66,9 @@ export default {
       apiTimeout: process.env.EXPO_API_TIMEOUT || 30000,
       enableAnalytics: process.env.EXPO_ENABLE_ANALYTICS === "true",
       enableDebug: process.env.EXPO_ENABLE_DEBUG === "true",
-      EXPO_PUBLIC_SECRET_KEY: process.env.EXPO_PUBLIC_SECRET_KEY,
+      EXPO_PUBLIC_SECRET_KEY:
+        "569e7af56a051588377545b8890ecb8540e01800759753cb1b30526beb36fe79d471bec938ca1e524b217f2351b9febb9b30eb6850869265073a68b162afe643",
+
       // Google OAuth Configuration
       GOOGLE_WEB_CLIENT_ID:
         "711162559013-5tu8e0so9qro65fn6iv1rm1cmok5o5s4.apps.googleusercontent.com",

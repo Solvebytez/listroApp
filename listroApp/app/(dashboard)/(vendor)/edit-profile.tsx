@@ -565,365 +565,461 @@ export default function VendorEditProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <GlobalStatusBar />
+    <>
+      <GlobalStatusBar
+        barStyle="light-content"
+        backgroundColor={COLORS.primary[500]}
+        translucent={false}
+      />
+      <SafeAreaView style={styles.safeArea} edges={["left", "right"]}>
+        <View style={styles.container}>
+          {/* Header */}
+          <AppHeader onBackPress={handleCancel} title="Edit Profile" />
 
-      {/* Header */}
-
-      <AppHeader onBackPress={handleCancel} title="Edit Profile" />
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Profile Picture Section */}
-
-        <ResponsiveCard variant="elevated" style={styles.profileCard}>
-          <View style={styles.profilePictureSection}>
-            <ResponsiveText
-              variant="h6"
-              weight="bold"
-              color={COLORS.text.primary}
-              style={styles.sectionTitle}
-            >
-              Profile Picture
-            </ResponsiveText>
-
-            <ProfilePictureUpload
-              currentAvatar={profileData?.avatar}
-              size={100}
-              showHint={true}
-              onUploadStateChange={setIsProfilePictureUploading}
-            />
-          </View>
-        </ResponsiveCard>
-
-        {/* Personal Information Form */}
-
-        <ResponsiveCard variant="elevated" style={styles.formCard}>
-          <ResponsiveText
-            variant="h6"
-            weight="bold"
-            color={COLORS.text.primary}
-            style={styles.sectionTitle}
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
           >
-            Personal Information
-          </ResponsiveText>
+            {/* Profile Picture Section */}
 
-          {/* Name Field */}
+            <ResponsiveCard variant="elevated" style={styles.profileCard}>
+              <View style={styles.profilePictureSection}>
+                <ResponsiveText
+                  variant="h6"
+                  weight="bold"
+                  color={COLORS.text.primary}
+                  style={styles.sectionTitle}
+                >
+                  Profile Picture
+                </ResponsiveText>
 
-          <View style={styles.inputGroup}>
-            <ResponsiveText
-              variant="inputLabel"
-              weight="medium"
-              color={COLORS.text.primary}
-              style={styles.inputLabel}
-            >
-              Full Name *
-            </ResponsiveText>
-
-            <Controller
-              control={control}
-              name="name"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput
-                  style={[styles.textInput, errors.name && styles.inputError]}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  placeholder="Enter your full name"
-                  placeholderTextColor={COLORS.text.secondary}
+                <ProfilePictureUpload
+                  currentAvatar={profileData?.avatar}
+                  size={100}
+                  showHint={true}
+                  onUploadStateChange={setIsProfilePictureUploading}
                 />
-              )}
-            />
+              </View>
+            </ResponsiveCard>
 
-            {errors.name && (
-              <ResponsiveText variant="inputHelper" color={COLORS.error[500]}>
-                {errors.name.message}
-              </ResponsiveText>
-            )}
-          </View>
+            {/* Personal Information Form */}
 
-          {/* Email Display (Read-only) */}
-          <View style={styles.inputGroup}>
-            <ResponsiveText
-              variant="inputLabel"
-              weight="medium"
-              color={COLORS.text.primary}
-              style={styles.inputLabel}
-            >
-              Email Address
-            </ResponsiveText>
-
-            <View style={[styles.textInput, styles.readOnlyInput]}>
+            <ResponsiveCard variant="elevated" style={styles.formCard}>
               <ResponsiveText
-                variant="body1"
+                variant="h6"
+                weight="bold"
                 color={COLORS.text.primary}
-                style={styles.readOnlyText}
+                style={styles.sectionTitle}
               >
-                {profileData && profileData.email ? profileData.email : ""}
+                Personal Information
               </ResponsiveText>
-            </View>
-            <ResponsiveText
-              variant="inputHelper"
-              color={COLORS.error[500]}
-              style={styles.helperText}
-            >
-              Email cannot be updated from profile settings
-            </ResponsiveText>
-          </View>
 
-          {/* Phone Field */}
+              {/* Name Field */}
 
-          <View style={styles.inputGroup}>
-            <ResponsiveText
-              variant="inputLabel"
-              weight="medium"
-              color={COLORS.text.primary}
-              style={styles.inputLabel}
-            >
-              Phone Number
-            </ResponsiveText>
+              <View style={styles.inputGroup}>
+                <ResponsiveText
+                  variant="inputLabel"
+                  weight="medium"
+                  color={COLORS.text.primary}
+                  style={styles.inputLabel}
+                >
+                  Full Name *
+                </ResponsiveText>
 
-            <Controller
-              control={control}
-              name="phone"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput
-                  style={[styles.textInput, errors.phone && styles.inputError]}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  placeholder="Enter your phone number"
-                  placeholderTextColor={COLORS.text.secondary}
-                  keyboardType="phone-pad"
+                <Controller
+                  control={control}
+                  name="name"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={[
+                        styles.textInput,
+                        errors.name && styles.inputError,
+                      ]}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                      placeholder="Enter your full name"
+                      placeholderTextColor={COLORS.text.secondary}
+                    />
+                  )}
                 />
-              )}
-            />
 
-            {errors.phone && (
-              <ResponsiveText variant="inputHelper" color={COLORS.error[500]}>
-                {errors.phone.message}
-              </ResponsiveText>
-            )}
-          </View>
-        </ResponsiveCard>
+                {errors.name && (
+                  <ResponsiveText
+                    variant="inputHelper"
+                    color={COLORS.error[500]}
+                  >
+                    {errors.name.message}
+                  </ResponsiveText>
+                )}
+              </View>
 
-        {/* Saved Addresses Section */}
-        {savedAddresses.length > 0 && (
-          <ResponsiveCard variant="elevated" style={styles.formCard}>
-            <ResponsiveText
-              variant="h6"
-              weight="bold"
-              color={COLORS.text.primary}
-              style={styles.sectionTitle}
-            >
-              📍 Saved Addresses
-            </ResponsiveText>
+              {/* Email Display (Read-only) */}
+              <View style={styles.inputGroup}>
+                <ResponsiveText
+                  variant="inputLabel"
+                  weight="medium"
+                  color={COLORS.text.primary}
+                  style={styles.inputLabel}
+                >
+                  Email Address
+                </ResponsiveText>
 
-            {savedAddresses.map((address, index) => (
-              <View key={address.id || index} style={styles.addressCard}>
-                {editingAddressId === address.id ? (
-                  // Edit Mode
-                  <View>
-                    <View style={styles.addressCardHeader}>
-                      <View style={styles.addressCardTitle}>
-                        <Ionicons
-                          name="location"
-                          size={16}
-                          color={COLORS.primary[500]}
-                          style={styles.addressIcon}
-                        />
-                        <ResponsiveText
-                          variant="body1"
-                          weight="semiBold"
-                          color={COLORS.text.primary}
-                        >
-                          Edit Address
-                        </ResponsiveText>
-                      </View>
-                      <View style={styles.addressCardActions}>
-                        <TouchableOpacity
-                          style={[styles.actionButton, styles.saveButton]}
-                          onPress={() => handleSaveAddress(address.id)}
-                          disabled={isUpdatingAddress}
-                        >
-                          {isUpdatingAddress ? (
+                <View style={[styles.textInput, styles.readOnlyInput]}>
+                  <ResponsiveText
+                    variant="body1"
+                    color={COLORS.text.primary}
+                    style={styles.readOnlyText}
+                  >
+                    {profileData && profileData.email ? profileData.email : ""}
+                  </ResponsiveText>
+                </View>
+                <ResponsiveText
+                  variant="inputHelper"
+                  color={COLORS.error[500]}
+                  style={styles.helperText}
+                >
+                  Email cannot be updated from profile settings
+                </ResponsiveText>
+              </View>
+
+              {/* Phone Field */}
+
+              <View style={styles.inputGroup}>
+                <ResponsiveText
+                  variant="inputLabel"
+                  weight="medium"
+                  color={COLORS.text.primary}
+                  style={styles.inputLabel}
+                >
+                  Phone Number
+                </ResponsiveText>
+
+                <Controller
+                  control={control}
+                  name="phone"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={[
+                        styles.textInput,
+                        errors.phone && styles.inputError,
+                      ]}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                      placeholder="Enter your phone number"
+                      placeholderTextColor={COLORS.text.secondary}
+                      keyboardType="phone-pad"
+                    />
+                  )}
+                />
+
+                {errors.phone && (
+                  <ResponsiveText
+                    variant="inputHelper"
+                    color={COLORS.error[500]}
+                  >
+                    {errors.phone.message}
+                  </ResponsiveText>
+                )}
+              </View>
+            </ResponsiveCard>
+
+            {/* Saved Addresses Section */}
+            {savedAddresses.length > 0 && (
+              <ResponsiveCard variant="elevated" style={styles.formCard}>
+                <ResponsiveText
+                  variant="h6"
+                  weight="bold"
+                  color={COLORS.text.primary}
+                  style={styles.sectionTitle}
+                >
+                  📍 Saved Addresses
+                </ResponsiveText>
+
+                {savedAddresses.map((address, index) => (
+                  <View key={address.id || index} style={styles.addressCard}>
+                    {editingAddressId === address.id ? (
+                      // Edit Mode
+                      <View>
+                        <View style={styles.addressCardHeader}>
+                          <View style={styles.addressCardTitle}>
                             <Ionicons
-                              name="hourglass"
+                              name="location"
                               size={16}
-                              color={COLORS.text.secondary}
+                              color={COLORS.primary[500]}
+                              style={styles.addressIcon}
                             />
-                          ) : (
+                            <ResponsiveText
+                              variant="body1"
+                              weight="semiBold"
+                              color={COLORS.text.primary}
+                            >
+                              Edit Address
+                            </ResponsiveText>
+                          </View>
+                          <View style={styles.addressCardActions}>
+                            <TouchableOpacity
+                              style={[styles.actionButton, styles.saveButton]}
+                              onPress={() => handleSaveAddress(address.id)}
+                              disabled={isUpdatingAddress}
+                            >
+                              {isUpdatingAddress ? (
+                                <Ionicons
+                                  name="hourglass"
+                                  size={16}
+                                  color={COLORS.text.secondary}
+                                />
+                              ) : (
+                                <Ionicons
+                                  name="checkmark"
+                                  size={16}
+                                  color={COLORS.success[500]}
+                                />
+                              )}
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.actionButton, styles.cancelButton]}
+                              onPress={handleCancelEdit}
+                            >
+                              <Ionicons
+                                name="close"
+                                size={16}
+                                color={COLORS.error[500]}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+
+                        {/* Edit Form Fields */}
+                        <View style={styles.editFormContainer}>
+                          {/* Address Type */}
+                          <View style={styles.editInputGroup}>
+                            <ResponsiveText
+                              variant="inputLabel"
+                              weight="medium"
+                              color={COLORS.text.primary}
+                              style={styles.editInputLabel}
+                            >
+                              Address Type
+                            </ResponsiveText>
+                            <TextInput
+                              style={styles.editTextInput}
+                              value={editingAddressData?.name || ""}
+                              onChangeText={(value) =>
+                                handleEditingAddressChange("name", value)
+                              }
+                              placeholder="e.g., Home, Shop 1, Shop 2"
+                              placeholderTextColor={COLORS.text.secondary}
+                            />
+                          </View>
+
+                          {/* Address */}
+                          <View style={styles.editInputGroup}>
+                            <ResponsiveText
+                              variant="inputLabel"
+                              weight="medium"
+                              color={COLORS.text.primary}
+                              style={styles.editInputLabel}
+                            >
+                              Address
+                            </ResponsiveText>
+                            <TextInput
+                              style={styles.editTextInput}
+                              value={editingAddressData?.address || ""}
+                              onChangeText={(value) =>
+                                handleEditingAddressChange("address", value)
+                              }
+                              placeholder="Enter your address"
+                              placeholderTextColor={COLORS.text.secondary}
+                            />
+                          </View>
+
+                          {/* City, State, Zip Row */}
+                          <View style={styles.editRowContainer}>
+                            <View style={[styles.editInputGroup, styles.flex1]}>
+                              <ResponsiveText
+                                variant="inputLabel"
+                                weight="medium"
+                                color={COLORS.text.primary}
+                                style={styles.editInputLabel}
+                              >
+                                City
+                              </ResponsiveText>
+                              <TextInput
+                                style={styles.editTextInput}
+                                value={editingAddressData?.city || ""}
+                                onChangeText={(value) =>
+                                  handleEditingAddressChange("city", value)
+                                }
+                                placeholder="City"
+                                placeholderTextColor={COLORS.text.secondary}
+                              />
+                            </View>
+                            <View
+                              style={[
+                                styles.editInputGroup,
+                                styles.flex1,
+                                styles.marginLeft,
+                              ]}
+                            >
+                              <ResponsiveText
+                                variant="inputLabel"
+                                weight="medium"
+                                color={COLORS.text.primary}
+                                style={styles.editInputLabel}
+                              >
+                                State
+                              </ResponsiveText>
+                              <TextInput
+                                style={styles.editTextInput}
+                                value={editingAddressData?.state || ""}
+                                onChangeText={(value) =>
+                                  handleEditingAddressChange("state", value)
+                                }
+                                placeholder="State"
+                                placeholderTextColor={COLORS.text.secondary}
+                              />
+                            </View>
+                            <View
+                              style={[
+                                styles.editInputGroup,
+                                styles.flex1,
+                                styles.marginLeft,
+                              ]}
+                            >
+                              <ResponsiveText
+                                variant="inputLabel"
+                                weight="medium"
+                                color={COLORS.text.primary}
+                                style={styles.editInputLabel}
+                              >
+                                Zip Code
+                              </ResponsiveText>
+                              <TextInput
+                                style={styles.editTextInput}
+                                value={editingAddressData?.zipCode || ""}
+                                onChangeText={(value) =>
+                                  handleEditingAddressChange("zipCode", value)
+                                }
+                                placeholder="Zip Code"
+                                placeholderTextColor={COLORS.text.secondary}
+                              />
+                            </View>
+                          </View>
+
+                          {/* Country */}
+                          <View style={styles.editInputGroup}>
+                            <ResponsiveText
+                              variant="inputLabel"
+                              weight="medium"
+                              color={COLORS.text.primary}
+                              style={styles.editInputLabel}
+                            >
+                              Country
+                            </ResponsiveText>
+                            <TextInput
+                              style={styles.editTextInput}
+                              value={editingAddressData?.country || ""}
+                              onChangeText={(value) =>
+                                handleEditingAddressChange("country", value)
+                              }
+                              placeholder="Country"
+                              placeholderTextColor={COLORS.text.secondary}
+                            />
+                          </View>
+                        </View>
+                      </View>
+                    ) : (
+                      // View Mode
+                      <View>
+                        <View style={styles.addressCardHeader}>
+                          <View style={styles.addressCardTitle}>
                             <Ionicons
-                              name="checkmark"
+                              name="location"
                               size={16}
-                              color={COLORS.success[500]}
+                              color={COLORS.primary[500]}
+                              style={styles.addressIcon}
                             />
-                          )}
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.actionButton, styles.cancelButton]}
-                          onPress={handleCancelEdit}
-                        >
-                          <Ionicons
-                            name="close"
-                            size={16}
-                            color={COLORS.error[500]}
-                          />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    {/* Edit Form Fields */}
-                    <View style={styles.editFormContainer}>
-                      {/* Address Type */}
-                      <View style={styles.editInputGroup}>
-                        <ResponsiveText
-                          variant="inputLabel"
-                          weight="medium"
-                          color={COLORS.text.primary}
-                          style={styles.editInputLabel}
-                        >
-                          Address Type
-                        </ResponsiveText>
-                        <TextInput
-                          style={styles.editTextInput}
-                          value={editingAddressData?.name || ""}
-                          onChangeText={(value) =>
-                            handleEditingAddressChange("name", value)
-                          }
-                          placeholder="e.g., Home, Shop 1, Shop 2"
-                          placeholderTextColor={COLORS.text.secondary}
-                        />
-                      </View>
-
-                      {/* Address */}
-                      <View style={styles.editInputGroup}>
-                        <ResponsiveText
-                          variant="inputLabel"
-                          weight="medium"
-                          color={COLORS.text.primary}
-                          style={styles.editInputLabel}
-                        >
-                          Address
-                        </ResponsiveText>
-                        <TextInput
-                          style={styles.editTextInput}
-                          value={editingAddressData?.address || ""}
-                          onChangeText={(value) =>
-                            handleEditingAddressChange("address", value)
-                          }
-                          placeholder="Enter your address"
-                          placeholderTextColor={COLORS.text.secondary}
-                        />
-                      </View>
-
-                      {/* City, State, Zip Row */}
-                      <View style={styles.editRowContainer}>
-                        <View style={[styles.editInputGroup, styles.flex1]}>
-                          <ResponsiveText
-                            variant="inputLabel"
-                            weight="medium"
-                            color={COLORS.text.primary}
-                            style={styles.editInputLabel}
-                          >
-                            City
-                          </ResponsiveText>
-                          <TextInput
-                            style={styles.editTextInput}
-                            value={editingAddressData?.city || ""}
-                            onChangeText={(value) =>
-                              handleEditingAddressChange("city", value)
-                            }
-                            placeholder="City"
-                            placeholderTextColor={COLORS.text.secondary}
-                          />
+                            <ResponsiveText
+                              variant="body1"
+                              weight="semiBold"
+                              color={COLORS.text.primary}
+                            >
+                              {address.name || `Address ${index + 1}`}
+                            </ResponsiveText>
+                          </View>
+                          <View style={styles.addressCardActions}>
+                            <TouchableOpacity
+                              style={styles.actionButton}
+                              onPress={() => handleEditAddress(address)}
+                            >
+                              <Ionicons
+                                name="pencil"
+                                size={16}
+                                color={COLORS.primary[500]}
+                              />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.actionButton}
+                              onPress={() => handleDeleteAddress(address.id)}
+                              disabled={isDeletingAddress}
+                            >
+                              {isDeletingAddress ? (
+                                <Ionicons
+                                  name="hourglass"
+                                  size={16}
+                                  color={COLORS.text.secondary}
+                                />
+                              ) : (
+                                <Ionicons
+                                  name="trash"
+                                  size={16}
+                                  color={COLORS.error[500]}
+                                />
+                              )}
+                            </TouchableOpacity>
+                          </View>
                         </View>
-                        <View
-                          style={[
-                            styles.editInputGroup,
-                            styles.flex1,
-                            styles.marginLeft,
-                          ]}
-                        >
-                          <ResponsiveText
-                            variant="inputLabel"
-                            weight="medium"
-                            color={COLORS.text.primary}
-                            style={styles.editInputLabel}
-                          >
-                            State
-                          </ResponsiveText>
-                          <TextInput
-                            style={styles.editTextInput}
-                            value={editingAddressData?.state || ""}
-                            onChangeText={(value) =>
-                              handleEditingAddressChange("state", value)
-                            }
-                            placeholder="State"
-                            placeholderTextColor={COLORS.text.secondary}
-                          />
-                        </View>
-                        <View
-                          style={[
-                            styles.editInputGroup,
-                            styles.flex1,
-                            styles.marginLeft,
-                          ]}
-                        >
-                          <ResponsiveText
-                            variant="inputLabel"
-                            weight="medium"
-                            color={COLORS.text.primary}
-                            style={styles.editInputLabel}
-                          >
-                            Zip Code
-                          </ResponsiveText>
-                          <TextInput
-                            style={styles.editTextInput}
-                            value={editingAddressData?.zipCode || ""}
-                            onChangeText={(value) =>
-                              handleEditingAddressChange("zipCode", value)
-                            }
-                            placeholder="Zip Code"
-                            placeholderTextColor={COLORS.text.secondary}
-                          />
-                        </View>
-                      </View>
 
-                      {/* Country */}
-                      <View style={styles.editInputGroup}>
                         <ResponsiveText
-                          variant="inputLabel"
-                          weight="medium"
-                          color={COLORS.text.primary}
-                          style={styles.editInputLabel}
+                          variant="body2"
+                          color={COLORS.text.secondary}
+                          style={styles.addressDetails}
                         >
-                          Country
+                          {address.address && `${address.address}, `}
+                          {address.city && `${address.city}, `}
+                          {address.state && `${address.state} `}
+                          {address.zipCode && `${address.zipCode}, `}
+                          {address.country}
                         </ResponsiveText>
-                        <TextInput
-                          style={styles.editTextInput}
-                          value={editingAddressData?.country || ""}
-                          onChangeText={(value) =>
-                            handleEditingAddressChange("country", value)
-                          }
-                          placeholder="Country"
-                          placeholderTextColor={COLORS.text.secondary}
-                        />
                       </View>
-                    </View>
+                    )}
                   </View>
-                ) : (
-                  // View Mode
-                  <View>
-                    <View style={styles.addressCardHeader}>
-                      <View style={styles.addressCardTitle}>
+                ))}
+              </ResponsiveCard>
+            )}
+
+            {/* Pending Addresses Section */}
+            {pendingAddresses.length > 0 && (
+              <ResponsiveCard variant="elevated" style={styles.formCard}>
+                <ResponsiveText
+                  variant="h6"
+                  weight="bold"
+                  color={COLORS.text.primary}
+                  style={styles.sectionTitle}
+                >
+                  ⏳ Pending Addresses ({pendingAddresses.length})
+                </ResponsiveText>
+                {pendingAddresses.map((address, index) => (
+                  <View key={index} style={styles.pendingAddressCard}>
+                    <View style={styles.pendingAddressHeader}>
+                      <View style={styles.pendingAddressTitle}>
                         <Ionicons
-                          name="location"
+                          name="time"
                           size={16}
-                          color={COLORS.primary[500]}
+                          color={COLORS.warning[500]}
                           style={styles.addressIcon}
                         />
                         <ResponsiveText
@@ -931,42 +1027,20 @@ export default function VendorEditProfileScreen() {
                           weight="semiBold"
                           color={COLORS.text.primary}
                         >
-                          {address.name || `Address ${index + 1}`}
+                          {address.name}
                         </ResponsiveText>
                       </View>
-                      <View style={styles.addressCardActions}>
-                        <TouchableOpacity
-                          style={styles.actionButton}
-                          onPress={() => handleEditAddress(address)}
-                        >
-                          <Ionicons
-                            name="pencil"
-                            size={16}
-                            color={COLORS.primary[500]}
-                          />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.actionButton}
-                          onPress={() => handleDeleteAddress(address.id)}
-                          disabled={isDeletingAddress}
-                        >
-                          {isDeletingAddress ? (
-                            <Ionicons
-                              name="hourglass"
-                              size={16}
-                              color={COLORS.text.secondary}
-                            />
-                          ) : (
-                            <Ionicons
-                              name="trash"
-                              size={16}
-                              color={COLORS.error[500]}
-                            />
-                          )}
-                        </TouchableOpacity>
-                      </View>
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => handleRemovePending(index)}
+                      >
+                        <Ionicons
+                          name="close"
+                          size={16}
+                          color={COLORS.error[500]}
+                        />
+                      </TouchableOpacity>
                     </View>
-
                     <ResponsiveText
                       variant="body2"
                       color={COLORS.text.secondary}
@@ -979,548 +1053,528 @@ export default function VendorEditProfileScreen() {
                       {address.country}
                     </ResponsiveText>
                   </View>
-                )}
-              </View>
-            ))}
-          </ResponsiveCard>
-        )}
-
-        {/* Pending Addresses Section */}
-        {pendingAddresses.length > 0 && (
-          <ResponsiveCard variant="elevated" style={styles.formCard}>
-            <ResponsiveText
-              variant="h6"
-              weight="bold"
-              color={COLORS.text.primary}
-              style={styles.sectionTitle}
-            >
-              ⏳ Pending Addresses ({pendingAddresses.length})
-            </ResponsiveText>
-            {pendingAddresses.map((address, index) => (
-              <View key={index} style={styles.pendingAddressCard}>
-                <View style={styles.pendingAddressHeader}>
-                  <View style={styles.pendingAddressTitle}>
-                    <Ionicons
-                      name="time"
-                      size={16}
-                      color={COLORS.warning[500]}
-                      style={styles.addressIcon}
-                    />
-                    <ResponsiveText
-                      variant="body1"
-                      weight="semiBold"
-                      color={COLORS.text.primary}
-                    >
-                      {address.name}
-                    </ResponsiveText>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => handleRemovePending(index)}
-                  >
-                    <Ionicons
-                      name="close"
-                      size={16}
-                      color={COLORS.error[500]}
-                    />
-                  </TouchableOpacity>
+                ))}
+                <View style={styles.pendingActions}>
+                  <ResponsiveButton
+                    title={`Save All ${pendingAddresses.length} Addresses`}
+                    onPress={handleSubmitPending}
+                    variant="primary"
+                    size="medium"
+                    style={styles.saveAllButton}
+                  />
                 </View>
-                <ResponsiveText
-                  variant="body2"
-                  color={COLORS.text.secondary}
-                  style={styles.addressDetails}
-                >
-                  {address.address && `${address.address}, `}
-                  {address.city && `${address.city}, `}
-                  {address.state && `${address.state} `}
-                  {address.zipCode && `${address.zipCode}, `}
-                  {address.country}
-                </ResponsiveText>
-              </View>
-            ))}
-            <View style={styles.pendingActions}>
-              <ResponsiveButton
-                title={`Save All ${pendingAddresses.length} Addresses`}
-                onPress={handleSubmitPending}
-                variant="primary"
-                size="medium"
-                style={styles.saveAllButton}
-              />
-            </View>
-          </ResponsiveCard>
-        )}
-
-        {/* Add New Address Form */}
-        <ResponsiveCard variant="elevated" style={styles.formCard}>
-          <ResponsiveText
-            variant="h6"
-            weight="bold"
-            color={COLORS.text.primary}
-            style={styles.sectionTitle}
-          >
-            ➕ Add New Address
-          </ResponsiveText>
-
-          {/* Address Type */}
-          <View style={styles.inputGroup}>
-            <ResponsiveText
-              variant="inputLabel"
-              weight="medium"
-              color={COLORS.text.primary}
-              style={styles.inputLabel}
-            >
-              Address Type
-            </ResponsiveText>
-
-            <Controller
-              control={control}
-              name="addressType"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput
-                  style={[
-                    styles.textInput,
-
-                    errors.addressType && styles.inputError,
-                  ]}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  placeholder="e.g., Home, Shop 1, Shop 2, Shop 3, Office"
-                  placeholderTextColor={COLORS.text.secondary}
-                />
-              )}
-            />
-
-            {errors.addressType && (
-              <ResponsiveText variant="inputHelper" color={COLORS.error[500]}>
-                {errors.addressType.message}
-              </ResponsiveText>
+              </ResponsiveCard>
             )}
-          </View>
 
-          {/* City, State, Zip Code Row */}
-
-          <View style={styles.rowContainer}>
-            <View style={[styles.inputGroup, styles.flex1]}>
-              <ResponsiveText
-                variant="inputLabel"
-                weight="medium"
-                color={COLORS.text.primary}
-                style={styles.inputLabel}
-              >
-                City
-              </ResponsiveText>
-
-              <Controller
-                control={control}
-                name="businessCity"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[
-                      styles.textInput,
-
-                      errors.businessCity && styles.inputError,
-                    ]}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                    placeholder="City"
-                    placeholderTextColor={COLORS.text.secondary}
-                  />
-                )}
-              />
-
-              {errors.businessCity && (
-                <ResponsiveText variant="inputHelper" color={COLORS.error[500]}>
-                  {errors.businessCity.message}
-                </ResponsiveText>
-              )}
-            </View>
-
-            <View style={[styles.inputGroup, styles.flex1, { marginLeft: 10 }]}>
-              <ResponsiveText
-                variant="inputLabel"
-                weight="medium"
-                color={COLORS.text.primary}
-                style={styles.inputLabel}
-              >
-                State
-              </ResponsiveText>
-
-              <Controller
-                control={control}
-                name="businessState"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[
-                      styles.textInput,
-
-                      errors.businessState && styles.inputError,
-                    ]}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                    placeholder="State"
-                    placeholderTextColor={COLORS.text.secondary}
-                  />
-                )}
-              />
-
-              {errors.businessState && (
-                <ResponsiveText variant="inputHelper" color={COLORS.error[500]}>
-                  {errors.businessState.message}
-                </ResponsiveText>
-              )}
-            </View>
-          </View>
-
-          {/* Zip Code and Country Row */}
-
-          <View style={styles.rowContainer}>
-            <View style={[styles.inputGroup, styles.flex1]}>
-              <ResponsiveText
-                variant="inputLabel"
-                weight="medium"
-                color={COLORS.text.primary}
-                style={styles.inputLabel}
-              >
-                Zip Code
-              </ResponsiveText>
-
-              <Controller
-                control={control}
-                name="businessZipCode"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[
-                      styles.textInput,
-
-                      errors.businessZipCode && styles.inputError,
-                    ]}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                    placeholder="Zip Code"
-                    placeholderTextColor={COLORS.text.secondary}
-                  />
-                )}
-              />
-
-              {errors.businessZipCode && (
-                <ResponsiveText variant="inputHelper" color={COLORS.error[500]}>
-                  {errors.businessZipCode.message}
-                </ResponsiveText>
-              )}
-            </View>
-
-            <View style={[styles.inputGroup, styles.flex1, { marginLeft: 10 }]}>
-              <ResponsiveText
-                variant="inputLabel"
-                weight="medium"
-                color={COLORS.text.primary}
-                style={styles.inputLabel}
-              >
-                Country
-              </ResponsiveText>
-
-              <Controller
-                control={control}
-                name="businessCountry"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[
-                      styles.textInput,
-
-                      errors.businessCountry && styles.inputError,
-                    ]}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                    placeholder="Country"
-                    placeholderTextColor={COLORS.text.secondary}
-                  />
-                )}
-              />
-
-              {errors.businessCountry && (
-                <ResponsiveText variant="inputHelper" color={COLORS.error[500]}>
-                  {errors.businessCountry.message}
-                </ResponsiveText>
-              )}
-            </View>
-          </View>
-
-          {/* Landmark Field */}
-
-          <View style={styles.inputGroup}>
-            <ResponsiveText
-              variant="inputLabel"
-              weight="medium"
-              color={COLORS.text.primary}
-              style={styles.inputLabel}
-            >
-              Landmark
-            </ResponsiveText>
-
-            <Controller
-              control={control}
-              name="businessAddress"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput
-                  style={[
-                    styles.textInput,
-
-                    styles.textArea,
-
-                    errors.businessAddress && styles.inputError,
-                  ]}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  placeholder="Enter your landmark"
-                  placeholderTextColor={COLORS.text.secondary}
-                  multiline
-                  numberOfLines={2}
-                />
-              )}
-            />
-
-            {errors.businessAddress && (
-              <ResponsiveText variant="inputHelper" color={COLORS.error[500]}>
-                {errors.businessAddress.message}
-              </ResponsiveText>
-            )}
-          </View>
-        </ResponsiveCard>
-
-        {/* Additional Address Cards */}
-
-        {additionalAddresses.map((address, index) => (
-          <ResponsiveCard
-            key={address.id}
-            variant="elevated"
-            style={styles.formCard}
-          >
-            <View style={styles.additionalAddressHeader}>
+            {/* Add New Address Form */}
+            <ResponsiveCard variant="elevated" style={styles.formCard}>
               <ResponsiveText
                 variant="h6"
                 weight="bold"
                 color={COLORS.text.primary}
                 style={styles.sectionTitle}
               >
-                Address {index + 2}
+                ➕ Add New Address
               </ResponsiveText>
 
-              <TouchableOpacity
-                onPress={() => removeAdditionalAddress(address.id)}
-                style={styles.removeAddressButton}
-              >
-                <Ionicons name="close" size={20} color={COLORS.error[500]} />
-              </TouchableOpacity>
-            </View>
+              {/* Address Type */}
+              <View style={styles.inputGroup}>
+                <ResponsiveText
+                  variant="inputLabel"
+                  weight="medium"
+                  color={COLORS.text.primary}
+                  style={styles.inputLabel}
+                >
+                  Address Type
+                </ResponsiveText>
 
-            {/* Address Type */}
-            <View style={styles.inputGroup}>
+                <Controller
+                  control={control}
+                  name="addressType"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={[
+                        styles.textInput,
+
+                        errors.addressType && styles.inputError,
+                      ]}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                      placeholder="e.g., Home, Shop 1, Shop 2, Shop 3, Office"
+                      placeholderTextColor={COLORS.text.secondary}
+                    />
+                  )}
+                />
+
+                {errors.addressType && (
+                  <ResponsiveText
+                    variant="inputHelper"
+                    color={COLORS.error[500]}
+                  >
+                    {errors.addressType.message}
+                  </ResponsiveText>
+                )}
+              </View>
+
+              {/* City, State, Zip Code Row */}
+
+              <View style={styles.rowContainer}>
+                <View style={[styles.inputGroup, styles.flex1]}>
+                  <ResponsiveText
+                    variant="inputLabel"
+                    weight="medium"
+                    color={COLORS.text.primary}
+                    style={styles.inputLabel}
+                  >
+                    City
+                  </ResponsiveText>
+
+                  <Controller
+                    control={control}
+                    name="businessCity"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        style={[
+                          styles.textInput,
+
+                          errors.businessCity && styles.inputError,
+                        ]}
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                        value={value}
+                        placeholder="City"
+                        placeholderTextColor={COLORS.text.secondary}
+                      />
+                    )}
+                  />
+
+                  {errors.businessCity && (
+                    <ResponsiveText
+                      variant="inputHelper"
+                      color={COLORS.error[500]}
+                    >
+                      {errors.businessCity.message}
+                    </ResponsiveText>
+                  )}
+                </View>
+
+                <View
+                  style={[styles.inputGroup, styles.flex1, { marginLeft: 10 }]}
+                >
+                  <ResponsiveText
+                    variant="inputLabel"
+                    weight="medium"
+                    color={COLORS.text.primary}
+                    style={styles.inputLabel}
+                  >
+                    State
+                  </ResponsiveText>
+
+                  <Controller
+                    control={control}
+                    name="businessState"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        style={[
+                          styles.textInput,
+
+                          errors.businessState && styles.inputError,
+                        ]}
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                        value={value}
+                        placeholder="State"
+                        placeholderTextColor={COLORS.text.secondary}
+                      />
+                    )}
+                  />
+
+                  {errors.businessState && (
+                    <ResponsiveText
+                      variant="inputHelper"
+                      color={COLORS.error[500]}
+                    >
+                      {errors.businessState.message}
+                    </ResponsiveText>
+                  )}
+                </View>
+              </View>
+
+              {/* Zip Code and Country Row */}
+
+              <View style={styles.rowContainer}>
+                <View style={[styles.inputGroup, styles.flex1]}>
+                  <ResponsiveText
+                    variant="inputLabel"
+                    weight="medium"
+                    color={COLORS.text.primary}
+                    style={styles.inputLabel}
+                  >
+                    Zip Code
+                  </ResponsiveText>
+
+                  <Controller
+                    control={control}
+                    name="businessZipCode"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        style={[
+                          styles.textInput,
+
+                          errors.businessZipCode && styles.inputError,
+                        ]}
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                        value={value}
+                        placeholder="Zip Code"
+                        placeholderTextColor={COLORS.text.secondary}
+                      />
+                    )}
+                  />
+
+                  {errors.businessZipCode && (
+                    <ResponsiveText
+                      variant="inputHelper"
+                      color={COLORS.error[500]}
+                    >
+                      {errors.businessZipCode.message}
+                    </ResponsiveText>
+                  )}
+                </View>
+
+                <View
+                  style={[styles.inputGroup, styles.flex1, { marginLeft: 10 }]}
+                >
+                  <ResponsiveText
+                    variant="inputLabel"
+                    weight="medium"
+                    color={COLORS.text.primary}
+                    style={styles.inputLabel}
+                  >
+                    Country
+                  </ResponsiveText>
+
+                  <Controller
+                    control={control}
+                    name="businessCountry"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        style={[
+                          styles.textInput,
+
+                          errors.businessCountry && styles.inputError,
+                        ]}
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                        value={value}
+                        placeholder="Country"
+                        placeholderTextColor={COLORS.text.secondary}
+                      />
+                    )}
+                  />
+
+                  {errors.businessCountry && (
+                    <ResponsiveText
+                      variant="inputHelper"
+                      color={COLORS.error[500]}
+                    >
+                      {errors.businessCountry.message}
+                    </ResponsiveText>
+                  )}
+                </View>
+              </View>
+
+              {/* Landmark Field */}
+
+              <View style={styles.inputGroup}>
+                <ResponsiveText
+                  variant="inputLabel"
+                  weight="medium"
+                  color={COLORS.text.primary}
+                  style={styles.inputLabel}
+                >
+                  Landmark
+                </ResponsiveText>
+
+                <Controller
+                  control={control}
+                  name="businessAddress"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={[
+                        styles.textInput,
+
+                        styles.textArea,
+
+                        errors.businessAddress && styles.inputError,
+                      ]}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                      placeholder="Enter your landmark"
+                      placeholderTextColor={COLORS.text.secondary}
+                      multiline
+                      numberOfLines={2}
+                    />
+                  )}
+                />
+
+                {errors.businessAddress && (
+                  <ResponsiveText
+                    variant="inputHelper"
+                    color={COLORS.error[500]}
+                  >
+                    {errors.businessAddress.message}
+                  </ResponsiveText>
+                )}
+              </View>
+            </ResponsiveCard>
+
+            {/* Additional Address Cards */}
+
+            {additionalAddresses.map((address, index) => (
+              <ResponsiveCard
+                key={address.id}
+                variant="elevated"
+                style={styles.formCard}
+              >
+                <View style={styles.additionalAddressHeader}>
+                  <ResponsiveText
+                    variant="h6"
+                    weight="bold"
+                    color={COLORS.text.primary}
+                    style={styles.sectionTitle}
+                  >
+                    Address {index + 2}
+                  </ResponsiveText>
+
+                  <TouchableOpacity
+                    onPress={() => removeAdditionalAddress(address.id)}
+                    style={styles.removeAddressButton}
+                  >
+                    <Ionicons
+                      name="close"
+                      size={20}
+                      color={COLORS.error[500]}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Address Type */}
+                <View style={styles.inputGroup}>
+                  <ResponsiveText
+                    variant="inputLabel"
+                    weight="medium"
+                    color={COLORS.text.primary}
+                    style={styles.inputLabel}
+                  >
+                    Address Type
+                  </ResponsiveText>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="e.g., Home, Shop 1, Shop 2, Shop 3, Office"
+                    placeholderTextColor={COLORS.text.secondary}
+                    value={address.addressType || ""}
+                    onChangeText={(text) =>
+                      updateAdditionalAddress(address.id, "addressType", text)
+                    }
+                  />
+                </View>
+
+                {/* City, State, Zip Code Row */}
+
+                <View style={styles.rowContainer}>
+                  <View style={[styles.inputGroup, styles.flex1]}>
+                    <ResponsiveText
+                      variant="inputLabel"
+                      weight="medium"
+                      color={COLORS.text.primary}
+                      style={styles.inputLabel}
+                    >
+                      City
+                    </ResponsiveText>
+
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="City"
+                      placeholderTextColor={COLORS.text.secondary}
+                      value={address.city || ""}
+                      onChangeText={(text) =>
+                        updateAdditionalAddress(address.id, "city", text)
+                      }
+                    />
+                  </View>
+
+                  <View
+                    style={[
+                      styles.inputGroup,
+                      styles.flex1,
+                      { marginLeft: 10 },
+                    ]}
+                  >
+                    <ResponsiveText
+                      variant="inputLabel"
+                      weight="medium"
+                      color={COLORS.text.primary}
+                      style={styles.inputLabel}
+                    >
+                      State
+                    </ResponsiveText>
+
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="State"
+                      placeholderTextColor={COLORS.text.secondary}
+                      value={address.state || ""}
+                      onChangeText={(text) =>
+                        updateAdditionalAddress(address.id, "state", text)
+                      }
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.rowContainer}>
+                  <View style={[styles.inputGroup, styles.flex1]}>
+                    <ResponsiveText
+                      variant="inputLabel"
+                      weight="medium"
+                      color={COLORS.text.primary}
+                      style={styles.inputLabel}
+                    >
+                      Zip Code
+                    </ResponsiveText>
+
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Zip Code"
+                      placeholderTextColor={COLORS.text.secondary}
+                      value={address.zipCode || ""}
+                      onChangeText={(text) =>
+                        updateAdditionalAddress(address.id, "zipCode", text)
+                      }
+                    />
+                  </View>
+
+                  <View
+                    style={[
+                      styles.inputGroup,
+                      styles.flex1,
+                      { marginLeft: 10 },
+                    ]}
+                  >
+                    <ResponsiveText
+                      variant="inputLabel"
+                      weight="medium"
+                      color={COLORS.text.primary}
+                      style={styles.inputLabel}
+                    >
+                      Country
+                    </ResponsiveText>
+
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Country"
+                      placeholderTextColor={COLORS.text.secondary}
+                      value={address.country || ""}
+                      onChangeText={(text) =>
+                        updateAdditionalAddress(address.id, "country", text)
+                      }
+                    />
+                  </View>
+                </View>
+
+                {/* Landmark Field */}
+
+                <View style={styles.inputGroup}>
+                  <ResponsiveText
+                    variant="inputLabel"
+                    weight="medium"
+                    color={COLORS.text.primary}
+                    style={styles.inputLabel}
+                  >
+                    Landmark
+                  </ResponsiveText>
+
+                  <TextInput
+                    style={[styles.textInput, styles.textArea]}
+                    placeholder="Enter your landmark"
+                    placeholderTextColor={COLORS.text.secondary}
+                    multiline
+                    numberOfLines={2}
+                    value={address.address || ""}
+                    onChangeText={(text) =>
+                      updateAdditionalAddress(address.id, "address", text)
+                    }
+                  />
+                </View>
+              </ResponsiveCard>
+            ))}
+
+            {/* Add Multiple Address Button */}
+
+            <TouchableOpacity
+              style={styles.addAddressButton}
+              onPress={addAdditionalAddress}
+            >
+              <Ionicons name="add" size={20} color={COLORS.primary[600]} />
+
               <ResponsiveText
-                variant="inputLabel"
+                variant="body2"
                 weight="medium"
-                color={COLORS.text.primary}
-                style={styles.inputLabel}
+                color={COLORS.primary[600]}
+                style={styles.addAddressButtonText}
               >
-                Address Type
+                Add Multiple Address
               </ResponsiveText>
-              <TextInput
-                style={styles.textInput}
-                placeholder="e.g., Home, Shop 1, Shop 2, Shop 3, Office"
-                placeholderTextColor={COLORS.text.secondary}
-                value={address.addressType || ""}
-                onChangeText={(text) =>
-                  updateAdditionalAddress(address.id, "addressType", text)
+            </TouchableOpacity>
+          </ScrollView>
+
+          {/* Fixed Footer Action Buttons */}
+          <View style={styles.fixedFooter}>
+            <View style={styles.buttonContainer}>
+              <ResponsiveButton
+                title="Cancel"
+                variant="outline"
+                size="medium"
+                onPress={handleCancel}
+                disabled={isProfilePictureUploading}
+                leftIcon={
+                  <Ionicons name="close" size={20} color={COLORS.error[500]} />
                 }
+                style={[styles.cancelButton, styles.halfWidthButton] as any}
+                textStyle={styles.cancelButtonText}
+              />
+
+              <ResponsiveButton
+                title={
+                  updateProfileMutation.isPending ? "Saving..." : "Save Changes"
+                }
+                variant="primary"
+                size="medium"
+                onPress={handleSubmit(onSubmit)}
+                disabled={
+                  updateProfileMutation.isPending ||
+                  isLoadingProfile ||
+                  isProfilePictureUploading
+                }
+                style={[styles.saveButton, styles.halfWidthButton] as any}
               />
             </View>
-
-            {/* City, State, Zip Code Row */}
-
-            <View style={styles.rowContainer}>
-              <View style={[styles.inputGroup, styles.flex1]}>
-                <ResponsiveText
-                  variant="inputLabel"
-                  weight="medium"
-                  color={COLORS.text.primary}
-                  style={styles.inputLabel}
-                >
-                  City
-                </ResponsiveText>
-
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="City"
-                  placeholderTextColor={COLORS.text.secondary}
-                  value={address.city || ""}
-                  onChangeText={(text) =>
-                    updateAdditionalAddress(address.id, "city", text)
-                  }
-                />
-              </View>
-
-              <View
-                style={[styles.inputGroup, styles.flex1, { marginLeft: 10 }]}
-              >
-                <ResponsiveText
-                  variant="inputLabel"
-                  weight="medium"
-                  color={COLORS.text.primary}
-                  style={styles.inputLabel}
-                >
-                  State
-                </ResponsiveText>
-
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="State"
-                  placeholderTextColor={COLORS.text.secondary}
-                  value={address.state || ""}
-                  onChangeText={(text) =>
-                    updateAdditionalAddress(address.id, "state", text)
-                  }
-                />
-              </View>
-            </View>
-
-            <View style={styles.rowContainer}>
-              <View style={[styles.inputGroup, styles.flex1]}>
-                <ResponsiveText
-                  variant="inputLabel"
-                  weight="medium"
-                  color={COLORS.text.primary}
-                  style={styles.inputLabel}
-                >
-                  Zip Code
-                </ResponsiveText>
-
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Zip Code"
-                  placeholderTextColor={COLORS.text.secondary}
-                  value={address.zipCode || ""}
-                  onChangeText={(text) =>
-                    updateAdditionalAddress(address.id, "zipCode", text)
-                  }
-                />
-              </View>
-
-              <View
-                style={[styles.inputGroup, styles.flex1, { marginLeft: 10 }]}
-              >
-                <ResponsiveText
-                  variant="inputLabel"
-                  weight="medium"
-                  color={COLORS.text.primary}
-                  style={styles.inputLabel}
-                >
-                  Country
-                </ResponsiveText>
-
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Country"
-                  placeholderTextColor={COLORS.text.secondary}
-                  value={address.country || ""}
-                  onChangeText={(text) =>
-                    updateAdditionalAddress(address.id, "country", text)
-                  }
-                />
-              </View>
-            </View>
-
-            {/* Landmark Field */}
-
-            <View style={styles.inputGroup}>
-              <ResponsiveText
-                variant="inputLabel"
-                weight="medium"
-                color={COLORS.text.primary}
-                style={styles.inputLabel}
-              >
-                Landmark
-              </ResponsiveText>
-
-              <TextInput
-                style={[styles.textInput, styles.textArea]}
-                placeholder="Enter your landmark"
-                placeholderTextColor={COLORS.text.secondary}
-                multiline
-                numberOfLines={2}
-                value={address.address || ""}
-                onChangeText={(text) =>
-                  updateAdditionalAddress(address.id, "address", text)
-                }
-              />
-            </View>
-          </ResponsiveCard>
-        ))}
-
-        {/* Add Multiple Address Button */}
-
-        <TouchableOpacity
-          style={styles.addAddressButton}
-          onPress={addAdditionalAddress}
-        >
-          <Ionicons name="add" size={20} color={COLORS.primary[600]} />
-
-          <ResponsiveText
-            variant="body2"
-            weight="medium"
-            color={COLORS.primary[600]}
-            style={styles.addAddressButtonText}
-          >
-            Add Multiple Address
-          </ResponsiveText>
-        </TouchableOpacity>
-      </ScrollView>
-
-      {/* Fixed Footer Action Buttons */}
-
-      <View style={styles.fixedFooter}>
-        <View style={styles.buttonContainer}>
-          <ResponsiveButton
-            title="Cancel"
-            variant="outline"
-            size="medium"
-            onPress={handleCancel}
-            disabled={isProfilePictureUploading}
-            leftIcon={
-              <Ionicons name="close" size={20} color={COLORS.error[500]} />
-            }
-            style={[styles.cancelButton, styles.halfWidthButton] as any}
-            textStyle={styles.cancelButtonText}
-          />
-
-          <ResponsiveButton
-            title={
-              updateProfileMutation.isPending ? "Saving..." : "Save Changes"
-            }
-            variant="primary"
-            size="medium"
-            onPress={handleSubmit(onSubmit)}
-            disabled={
-              updateProfileMutation.isPending ||
-              isLoadingProfile ||
-              isProfilePictureUploading
-            }
-            style={[styles.saveButton, styles.halfWidthButton] as any}
-          />
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.background.primary,
+  },
   container: {
     flex: 1,
-
     backgroundColor: COLORS.background.primary,
   },
 

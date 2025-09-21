@@ -12,6 +12,7 @@ import {
 import { ResponsiveText } from "../UI/ResponsiveText";
 import { COLORS } from "../../constants";
 import { useOfflineCategories } from "../../hooks/useOfflineCategories";
+import { useFreshCategories } from "../../hooks/useFreshCategories";
 import { CategoryTreeNode } from "../../utils/categoryTreeUtils";
 
 interface DropdownCategorySelectorProps {
@@ -19,6 +20,8 @@ interface DropdownCategorySelectorProps {
   onCategorySelect: (categoryId: string | null, categoryPath: string[]) => void;
   error?: string;
   maxLevels?: number;
+  useFreshData?: boolean; // If true, always fetch fresh categories from server
+  autoClose?: boolean; // If true, closes after each selection (default: true)
 }
 
 interface CategoryLevel {
@@ -51,8 +54,14 @@ const DropdownModal: React.FC<DropdownModalProps> = ({
         selectedId === item.id && styles.selectedModalItem,
       ]}
       onPress={() => {
+        console.log("=== MODAL ITEM PRESSED ===");
+        console.log("Item:", item.name);
+        console.log("Item children:", item.children?.length || 0);
+        console.log("Calling onSelect...");
         onSelect(item);
+        console.log("Calling onClose...");
         onClose();
+        console.log("========================");
       }}
     >
       <ResponsiveText
@@ -107,17 +116,26 @@ const DropdownModal: React.FC<DropdownModalProps> = ({
 
 export const DropdownCategorySelector: React.FC<
   DropdownCategorySelectorProps
-> = ({ selectedCategoryId, onCategorySelect, error, maxLevels = 4 }) => {
+> = ({
+  selectedCategoryId,
+  onCategorySelect,
+  error,
+  maxLevels = 4,
+  useFreshData = false,
+  autoClose = true,
+}) => {
   const [categoryLevels, setCategoryLevels] = useState<CategoryLevel[]>([]);
   const [selectedPath, setSelectedPath] = useState<string[]>([]);
   const [activeModal, setActiveModal] = useState<number | null>(null);
+  const [isEditing, setIsEditing] = useState(true); // Start in editing mode by default
 
-  // Get category tree data
+  // Get category tree data - use fresh data if requested, otherwise use cached
   const {
     data: categoryTree,
     isLoading,
     error: treeError,
-  } = useOfflineCategories();
+    refetch: refetchCategories,
+  } = useFreshData ? useFreshCategories() : useOfflineCategories();
 
   // Initialize with root categories
   useEffect(() => {
@@ -132,8 +150,125 @@ export const DropdownCategorySelector: React.FC<
     }
   }, [categoryTree]);
 
+  // Pre-populate category levels if selectedCategoryId is provided
+  useEffect(() => {
+    if (selectedCategoryId && categoryTree && categoryTree.length > 0) {
+      console.log("=== PRE-POPULATING CATEGORY SELECTOR ===");
+      console.log("Selected Category ID:", selectedCategoryId);
+      console.log("This is being called from useEffect - pre-population");
+
+      // Find the selected category in the tree
+      const findCategoryInTree = (
+        categories: CategoryTreeNode[],
+        targetId: string
+      ): CategoryTreeNode | null => {
+        for (const category of categories) {
+          if (category.id === targetId) {
+            return category;
+          }
+          if (category.children && category.children.length > 0) {
+            const found = findCategoryInTree(category.children, targetId);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      const selectedCategory = findCategoryInTree(
+        categoryTree,
+        selectedCategoryId
+      );
+      console.log("Found Selected Category:", selectedCategory);
+
+      if (selectedCategory) {
+        // Build the category path by traversing up the tree
+        const buildCategoryPath = (
+          categories: CategoryTreeNode[],
+          targetId: string,
+          path: CategoryTreeNode[] = []
+        ): CategoryTreeNode[] => {
+          for (const category of categories) {
+            const currentPath = [...path, category];
+            if (category.id === targetId) {
+              return currentPath;
+            }
+            if (category.children && category.children.length > 0) {
+              const found = buildCategoryPath(
+                category.children,
+                targetId,
+                currentPath
+              );
+              if (found.length > 0) return found;
+            }
+          }
+          return [];
+        };
+
+        const categoryPath = buildCategoryPath(
+          categoryTree,
+          selectedCategoryId
+        );
+        console.log("Category Path:", categoryPath);
+
+        // Build category levels from the path
+        const newLevels: CategoryLevel[] = [];
+        let currentCategories = categoryTree;
+
+        for (let i = 0; i < categoryPath.length; i++) {
+          const category = categoryPath[i];
+          newLevels.push({
+            categories: currentCategories,
+            selectedId: category.id,
+            selectedName: category.name,
+          });
+
+          // Move to next level if category has children
+          if (
+            category.children &&
+            category.children.length > 0 &&
+            i < categoryPath.length - 1
+          ) {
+            currentCategories = category.children;
+          }
+        }
+
+        // If the last selected category has children, add a subcategory level
+        const lastCategory = categoryPath[categoryPath.length - 1];
+        if (
+          lastCategory &&
+          lastCategory.children &&
+          lastCategory.children.length > 0 &&
+          newLevels.length < maxLevels
+        ) {
+          console.log(
+            "Adding subcategory level for selected category with",
+            lastCategory.children.length,
+            "children"
+          );
+          newLevels.push({
+            categories: lastCategory.children,
+            selectedId: null,
+            selectedName: null,
+          });
+        }
+
+        console.log("Built Category Levels:", newLevels);
+        setCategoryLevels(newLevels);
+        setSelectedPath(categoryPath.map((cat) => cat.name));
+        console.log("Category selector pre-populated successfully");
+        console.log("==========================================");
+      }
+    }
+  }, [selectedCategoryId, categoryTree]);
+
   // Handle category selection at any level
   const handleCategorySelect = (category: CategoryTreeNode, level: number) => {
+    console.log("=== CATEGORY SELECTION ===");
+    console.log("Selected category:", category.name, "at level:", level);
+    console.log("Has children:", category.children?.length || 0);
+    console.log("Max levels:", maxLevels);
+    console.log("Auto close:", autoClose);
+
     const newLevels = [...categoryLevels];
 
     // Update the selected category at this level
@@ -146,20 +281,24 @@ export const DropdownCategorySelector: React.FC<
     // Remove all levels after this one
     newLevels.splice(level + 1);
 
-    // If this category has children, add a new level
-    if (
-      category.children &&
-      category.children.length > 0 &&
-      level < maxLevels - 1
-    ) {
+    // Check if this category has children and we can add more levels
+    const hasChildren = category.children && category.children.length > 0;
+    const canAddMoreLevels = level < maxLevels - 1;
+    const willAddSubcategory = hasChildren && canAddMoreLevels;
+
+    // If this category has children, add a new level immediately
+    if (willAddSubcategory) {
+      console.log(
+        "Adding subcategory level with",
+        category.children.length,
+        "children"
+      );
       newLevels.push({
         categories: category.children,
         selectedId: null,
         selectedName: null,
       });
     }
-
-    setCategoryLevels(newLevels);
 
     // Build the category path
     const path: string[] = [];
@@ -169,8 +308,24 @@ export const DropdownCategorySelector: React.FC<
       }
     }
 
+    console.log("New levels count:", newLevels.length);
+    console.log("Category path:", path);
+    console.log("Will add subcategory:", willAddSubcategory);
+
+    // Update all states in a single batch to ensure immediate UI update
+    setCategoryLevels(newLevels);
     setSelectedPath(path);
     onCategorySelect(category.id, path);
+
+    // Auto-exit editing mode when a category is selected (if autoClose is enabled)
+    // But only if there are no subcategories to show
+    if (autoClose && !willAddSubcategory) {
+      console.log("Auto-closing editing mode - no subcategories");
+      setIsEditing(false);
+    } else if (autoClose && willAddSubcategory) {
+      console.log("Keeping editing mode open - subcategories available");
+    }
+    console.log("=========================");
   };
 
   // Handle "None" selection (clear selection)
@@ -221,9 +376,7 @@ export const DropdownCategorySelector: React.FC<
 
     return (
       <View key={level} style={styles.dropdownContainer}>
-        <ResponsiveText variant="body2" style={styles.dropdownLabel}>
-          {levelName}:
-        </ResponsiveText>
+        {/* Remove the level name label */}
 
         <TouchableOpacity
           style={styles.dropdownButton}
@@ -263,7 +416,9 @@ export const DropdownCategorySelector: React.FC<
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color={COLORS.primary[500]} />
           <ResponsiveText variant="body1" style={styles.loadingText}>
-            Loading categories...
+            {useFreshData
+              ? "Fetching latest categories..."
+              : "Loading categories..."}
           </ResponsiveText>
         </View>
       </View>
@@ -296,14 +451,48 @@ export const DropdownCategorySelector: React.FC<
     );
   }
 
+  // Debug current state
+  console.log("=== DROPDOWN CATEGORY SELECTOR RENDER ===");
+  console.log("isEditing:", isEditing);
+  console.log("categoryLevels.length:", categoryLevels.length);
+  console.log("selectedPath:", selectedPath);
+  console.log("autoClose:", autoClose);
+  console.log("=========================================");
+
   return (
     <View style={styles.inputGroup}>
-      {/* Selected Path Display */}
-      {selectedPath.length > 0 && (
-        <View style={styles.selectedPathContainer}>
-          <ResponsiveText variant="body2" style={styles.selectedPathLabel}>
-            Selected: {selectedPath.join(" > ")}
-          </ResponsiveText>
+      {/* Category Label */}
+      <ResponsiveText variant="inputLabel" style={styles.categoryLabel}>
+        Category:
+      </ResponsiveText>
+
+      {/* Category Breadcrumb Display - Show when not actively selecting */}
+      {selectedPath.length > 0 && !isEditing && (
+        <View style={styles.breadcrumbContainer}>
+          <View style={styles.breadcrumbContent}>
+            <ResponsiveText variant="body2" style={styles.breadcrumbText}>
+              {selectedPath.join(" > ")}
+            </ResponsiveText>
+          </View>
+          <TouchableOpacity
+            style={styles.editIcon}
+            onPress={() => setIsEditing(true)}
+          >
+            <ResponsiveText variant="body2" style={styles.editIconText}>
+              Edit
+            </ResponsiveText>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Show breadcrumb while editing if there's a selection */}
+      {selectedPath.length > 0 && isEditing && (
+        <View style={styles.breadcrumbContainer}>
+          <View style={styles.breadcrumbContent}>
+            <ResponsiveText variant="body2" style={styles.breadcrumbText}>
+              {selectedPath.join(" > ")}
+            </ResponsiveText>
+          </View>
         </View>
       )}
 
@@ -316,32 +505,68 @@ export const DropdownCategorySelector: React.FC<
         </View>
       )}
 
-      {/* Dropdown Levels */}
-      <View style={styles.dropdownsContainer}>
-        {categoryLevels.map((_, index) => renderDropdownLevel(index))}
-      </View>
-
-      {/* Clear All Button */}
-      {selectedCategoryId && (
-        <TouchableOpacity
-          style={styles.clearButton}
-          onPress={() => {
-            setCategoryLevels([
-              {
-                categories: categoryTree,
-                selectedId: null,
-                selectedName: null,
-              },
-            ]);
-            setSelectedPath([]);
-            onCategorySelect(null, []);
-          }}
-        >
-          <ResponsiveText variant="body2" style={styles.clearButtonText}>
-            Clear All Selections
-          </ResponsiveText>
-        </TouchableOpacity>
+      {/* Dropdown Levels - Only show when editing */}
+      {isEditing && (
+        <View style={styles.dropdownsContainer}>
+          {console.log(
+            "Rendering dropdown levels:",
+            categoryLevels.length,
+            "levels"
+          )}
+          {categoryLevels.map((level, index) => {
+            console.log(
+              `Level ${index}:`,
+              level.selectedName,
+              "has",
+              level.categories.length,
+              "categories"
+            );
+            return renderDropdownLevel(index);
+          })}
+        </View>
       )}
+
+      {/* Action Buttons - Only show Refresh and Clear All */}
+      {isEditing && (
+        <View style={styles.actionButtonsContainer}>
+          {useFreshData && (
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={() => {
+                // Force refresh categories
+                refetchCategories();
+              }}
+            >
+              <ResponsiveText variant="body2" style={styles.refreshButtonText}>
+                Refresh
+              </ResponsiveText>
+            </TouchableOpacity>
+          )}
+
+          {selectedCategoryId && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={() => {
+                setCategoryLevels([
+                  {
+                    categories: categoryTree,
+                    selectedId: null,
+                    selectedName: null,
+                  },
+                ]);
+                setSelectedPath([]);
+                onCategorySelect(null, []);
+              }}
+            >
+              <ResponsiveText variant="body2" style={styles.clearButtonText}>
+                Clear All
+              </ResponsiveText>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {/* No "Select Category" button needed - start in editing mode */}
     </View>
   );
 };
@@ -349,6 +574,57 @@ export const DropdownCategorySelector: React.FC<
 const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: 16,
+  },
+  categoryLabel: {
+    color: COLORS.text.primary,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  breadcrumbContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 8,
+    backgroundColor: COLORS.primary[50],
+    borderRadius: 6,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: COLORS.primary[200],
+  },
+  breadcrumbContent: {
+    flex: 1,
+    alignItems: "center",
+  },
+  breadcrumbText: {
+    color: COLORS.primary[700],
+    fontWeight: "500",
+    fontSize: 12,
+  },
+  editIcon: {
+    padding: 2,
+    marginLeft: 6,
+  },
+  editIconText: {
+    fontSize: 12,
+  },
+  selectCategoryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 8,
+    borderWidth: 1,
+    borderColor: COLORS.black,
+    borderRadius: 6,
+    backgroundColor: COLORS.background.primary,
+  },
+  selectCategoryText: {
+    color: COLORS.text.secondary,
+    fontStyle: "italic",
+    fontSize: 12,
+  },
+  selectCategoryIcon: {
+    color: COLORS.text.secondary,
+    fontSize: 10,
   },
   selectedPathContainer: {
     padding: 12,
@@ -507,18 +783,82 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary,
     textAlign: "center",
   },
-  clearButton: {
-    padding: 12,
+  actionButtonsContainer: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 12,
+  },
+  refreshButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     alignItems: "center",
-    marginTop: 8,
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: COLORS.error[300],
+    borderColor: COLORS.primary[400],
     borderRadius: 8,
-    backgroundColor: COLORS.error[50],
+    backgroundColor: COLORS.primary[100],
+    minHeight: 40,
+  },
+  refreshButtonText: {
+    color: COLORS.primary[700],
+    fontWeight: "600",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: COLORS.neutral[400],
+    borderRadius: 8,
+    backgroundColor: COLORS.neutral[100],
+    minHeight: 40,
+  },
+  cancelButtonText: {
+    color: COLORS.neutral[700],
+    fontWeight: "600",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  clearButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: COLORS.error[400],
+    borderRadius: 8,
+    backgroundColor: COLORS.error[100],
+    minHeight: 40,
   },
   clearButtonText: {
-    color: COLORS.error[600],
-    fontWeight: "500",
+    color: COLORS.error[700],
+    fontWeight: "600",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  doneButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: COLORS.success[400],
+    borderRadius: 8,
+    backgroundColor: COLORS.success[100],
+    minHeight: 40,
+  },
+  doneButtonText: {
+    color: COLORS.success[700],
+    fontWeight: "600",
+    fontSize: 12,
+    textAlign: "center",
   },
 });
 

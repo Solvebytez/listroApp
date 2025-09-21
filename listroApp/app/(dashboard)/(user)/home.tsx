@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
+  FlatList,
+  Dimensions,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -23,49 +26,250 @@ import {
 import { GlobalStatusBar } from "../../../components/StatusBar";
 import { ResponsiveText, ResponsiveCard } from "@/components";
 import { useUser } from "../../../hooks/useUser";
+import { useUserFavoritesData } from "../../../hooks/useUserFavorites";
+import { FavoriteServiceCard } from "../../../components/user/FavoriteServiceCard";
+import { usePrimaryCategories } from "../../../hooks/useCategories";
+import { Category } from "../../../services/category";
+import { PromotionBannerSlider } from "../../../components/common/PromotionBannerSlider";
+import {
+  PopularServicesSection,
+  HowItWorksSection,
+  AppReviewsSection,
+} from "../../../components/user";
+import { usePopularServices } from "../../../hooks/useServiceListings";
+import { useQueryClient } from "@tanstack/react-query";
+import { usePublicAppReviews } from "../../../hooks/useAppReviews";
+
+// Get screen dimensions
+const { width: screenWidth } = Dimensions.get("window");
+
+// Utility function to chunk array into pairs of 2
+const chunkArray = (arr: Category[], size: number): Category[][] => {
+  let result: Category[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    result.push(arr.slice(i, i + size));
+  }
+  return result;
+};
+
+// Icon mapping for categories
+const getCategoryIcon = (
+  categoryName: string
+): keyof typeof Ionicons.glyphMap => {
+  const name = categoryName.toLowerCase();
+
+  if (
+    name.includes("loan") ||
+    name.includes("finance") ||
+    name.includes("bank")
+  )
+    return "wallet";
+  if (
+    name.includes("doctor") ||
+    name.includes("medical") ||
+    name.includes("health")
+  )
+    return "medical";
+  if (
+    name.includes("travel") ||
+    name.includes("tourism") ||
+    name.includes("vacation")
+  )
+    return "airplane";
+  if (name.includes("beauty") || name.includes("salon") || name.includes("spa"))
+    return "person";
+  if (
+    name.includes("gym") ||
+    name.includes("fitness") ||
+    name.includes("sport")
+  )
+    return "fitness";
+  if (
+    name.includes("repair") ||
+    name.includes("service") ||
+    name.includes("maintenance")
+  )
+    return "construct";
+  if (
+    name.includes("education") ||
+    name.includes("school") ||
+    name.includes("learning")
+  )
+    return "school";
+  if (
+    name.includes("food") ||
+    name.includes("restaurant") ||
+    name.includes("catering")
+  )
+    return "restaurant";
+  if (
+    name.includes("transport") ||
+    name.includes("delivery") ||
+    name.includes("logistics")
+  )
+    return "car";
+  if (
+    name.includes("technology") ||
+    name.includes("it") ||
+    name.includes("software")
+  )
+    return "laptop";
+  if (
+    name.includes("real estate") ||
+    name.includes("property") ||
+    name.includes("housing")
+  )
+    return "home";
+  if (
+    name.includes("legal") ||
+    name.includes("law") ||
+    name.includes("attorney")
+  )
+    return "document-text";
+  if (
+    name.includes("consulting") ||
+    name.includes("business") ||
+    name.includes("advisory")
+  )
+    return "briefcase";
+  if (
+    name.includes("entertainment") ||
+    name.includes("event") ||
+    name.includes("party")
+  )
+    return "musical-notes";
+  if (
+    name.includes("automotive") ||
+    name.includes("car") ||
+    name.includes("vehicle")
+  )
+    return "car-sport";
+  if (
+    name.includes("pet") ||
+    name.includes("animal") ||
+    name.includes("veterinary")
+  )
+    return "paw";
+  if (
+    name.includes("cleaning") ||
+    name.includes("housekeeping") ||
+    name.includes("maintenance")
+  )
+    return "sparkles";
+  if (
+    name.includes("security") ||
+    name.includes("safety") ||
+    name.includes("protection")
+  )
+    return "shield";
+
+  return "grid"; // Default icon
+};
+
+// Color mapping for categories
+const getCategoryColor = (index: number): string => {
+  const colors = [
+    "#20B2AA",
+    "#87CEEB",
+    "#9370DB",
+    "#FFA500",
+    "#FF6B6B",
+    "#4ECDC4",
+    "#45B7D1",
+    "#96CEB4",
+    "#FFEAA7",
+    "#DDA0DD",
+    "#98D8C8",
+    "#F7DC6F",
+  ];
+  return colors[index % colors.length];
+};
 
 export default function UserHomeScreen() {
+  // Pull to refresh state
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Query client for cache invalidation
+  const queryClient = useQueryClient();
+
   // Use React Query to fetch user data
-  const { data: user, isLoading, error } = useUser();
+  const { data: user, isLoading, error, refetch: refetchUser } = useUser();
 
-  // Mock data for favorite services
-  const favoriteServices = [
-    {
-      id: "1",
-      title: "Health & Care",
-      image: require("../../../assets/user.png"),
-      color: "#4CAF50",
-    },
-    {
-      id: "2",
-      title: "Fitness",
-      image: require("../../../assets/businessman.png"),
-      color: "#FF9800",
-    },
-    {
-      id: "3",
-      title: "Travel",
-      image: require("../../../assets/user-laptop.png"),
-      color: "#2196F3",
-    },
-  ];
+  // Fetch popular services
+  const {
+    data: popularServicesData,
+    isLoading: popularServicesLoading,
+    error: popularServicesError,
+    refetch: refetchPopularServices,
+  } = usePopularServices(5, true);
 
-  // Mock data for service categories
-  const serviceCategories = [
-    { id: "1", title: "Loans", icon: "wallet", color: "#20B2AA" },
-    { id: "2", title: "Doctors", icon: "medical", color: "#20B2AA" },
-    { id: "3", title: "Travel", icon: "airplane", color: "#87CEEB" },
-    { id: "4", title: "Beauty", icon: "person", color: "#87CEEB" },
-    { id: "5", title: "Gyms", icon: "fitness", color: "#9370DB" },
-    {
-      id: "6",
-      title: "Repairs & Services",
-      icon: "construct",
-      color: "#FFA500",
-    },
-  ];
+  // Transform API data to component format
+  const transformedPopularServices =
+    (popularServicesData as any)?.data?.listings?.map((service: any) => {
+      return {
+        id: service.id || "",
+        title: service.title || "",
+        image: service.image || undefined,
+        vendorName:
+          service.services?.[0]?.name || service.title || "Unknown Service", // Use first service name, fallback to service title
+        category: service.category?.name || "General", // Safe access with fallback
+        price: service.services?.[0]?.price || undefined,
+        rating: service.rating || undefined,
+        totalReviews: service.totalReviews || undefined,
+      };
+    }) || [];
 
-  // Debug arrays
+  // Fetch user's favorite services (limit to 10 for home screen)
+  const {
+    favorites,
+    isLoading: favoritesLoading,
+    error: favoritesError,
+    refetch: refetchFavorites,
+  } = useUserFavoritesData(user?.id || null, 10);
+
+  // Fetch primary categories from API
+  const {
+    data: categories,
+    isLoading: categoriesLoading,
+    error: categoriesError,
+    refetch: refetchCategories,
+  } = usePrimaryCategories();
+
+  // Fetch public app reviews
+  const {
+    data: appReviewsData,
+    isLoading: appReviewsLoading,
+    error: appReviewsError,
+    refetch: refetchAppReviews,
+  } = usePublicAppReviews(5);
+
+  // Process categories for display (limit to 12 for home screen)
+  const displayCategories = categories ? categories.slice(0, 12) : [];
+  const groupedCategories = chunkArray(displayCategories, 2);
+
+  // Pull to refresh function
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Invalidate promotions cache to force refetch
+      await queryClient.invalidateQueries({
+        queryKey: ["activePromotions"],
+      });
+
+      // Refetch all data
+      await Promise.all([
+        refetchUser(),
+        refetchPopularServices(),
+        refetchFavorites(),
+        refetchCategories(),
+        refetchAppReviews(),
+      ]);
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleSearchPress = () => {
     router.push("/(dashboard)/(user)/search");
@@ -147,7 +351,11 @@ export default function UserHomeScreen() {
                   color={COLORS.text.light}
                   style={styles.searchIcon}
                 />
-                <ResponsiveText variant="body2" color={COLORS.text.light}>
+                <ResponsiveText
+                  variant="caption2"
+                  color={COLORS.text.light}
+                  style={{ fontSize: 12 }}
+                >
                   Search & Shop Anywhere
                 </ResponsiveText>
               </TouchableOpacity>
@@ -158,108 +366,172 @@ export default function UserHomeScreen() {
           <ScrollView
             style={styles.content}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[COLORS.primary[500]]} // Android
+                tintColor={COLORS.primary[500]} // iOS
+                title="Pull to refresh" // iOS
+                titleColor={COLORS.text.secondary} // iOS
+              />
+            }
           >
-            {/* My Favorite Services Section */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <ResponsiveText
-                  variant="h4"
-                  weight="bold"
-                  color={COLORS.text.primary}
-                >
-                  My Favorite Services
-                </ResponsiveText>
-                <TouchableOpacity>
-                  <ResponsiveText variant="body2" color={COLORS.text.secondary}>
-                    See more
+            {/* My Favorite Services Section - Only show if user has favorites */}
+            {favorites && favorites.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <ResponsiveText
+                    variant="h5"
+                    weight="bold"
+                    color={COLORS.text.primary}
+                  >
+                    My Favorite Services
                   </ResponsiveText>
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.favoriteServicesContainer}
-              >
-                {favoriteServices.map((service) => {
-                  return (
-                    <TouchableOpacity
-                      key={service.id}
-                      style={styles.favoriteServiceCard}
+                  <TouchableOpacity>
+                    <ResponsiveText
+                      variant="body2"
+                      color={COLORS.text.secondary}
                     >
-                      <View style={styles.serviceImageContainer}>
-                        <Image
-                          source={service.image}
-                          style={styles.serviceImage}
-                          resizeMode="cover"
-                        />
-                        <View
-                          style={[
-                            styles.serviceOverlay,
-                            { backgroundColor: service.color },
-                          ]}
-                        >
-                          <ResponsiveText
-                            variant="body2"
-                            weight="bold"
-                            color={COLORS.white}
-                          >
-                            {service.title}
-                          </ResponsiveText>
-                        </View>
-                      </View>
-                      <ResponsiveText
-                        variant="caption1"
-                        weight="medium"
-                        color={COLORS.text.primary}
-                        style={styles.serviceTitle}
-                      >
-                        {service.title}
-                      </ResponsiveText>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
+                      See all
+                    </ResponsiveText>
+                  </TouchableOpacity>
+                </View>
+
+                {favoritesLoading ? (
+                  <View style={styles.loadingContainer}>
+                    <ResponsiveText
+                      variant="body2"
+                      color={COLORS.text.secondary}
+                    >
+                      Loading your favorites...
+                    </ResponsiveText>
+                  </View>
+                ) : favoritesError ? (
+                  <View style={styles.errorContainer}>
+                    <ResponsiveText variant="body2" color={COLORS.error[500]}>
+                      Failed to load favorites
+                    </ResponsiveText>
+                  </View>
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.favoriteServicesContainer}
+                  >
+                    {favorites.map((favorite) => (
+                      <FavoriteServiceCard
+                        key={favorite.id}
+                        favorite={favorite}
+                        showRemoveButton={true}
+                      />
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            )}
 
             {/* Service Categories Grid */}
             <View style={styles.section}>
-              <View style={styles.categoriesGrid}>
-                {serviceCategories.map((category) => {
-                  return (
-                    <TouchableOpacity
-                      key={category.id}
-                      style={styles.categoryItem}
-                    >
-                      <View
-                        style={[
-                          styles.categoryIcon,
-                          { backgroundColor: category.color },
-                        ]}
-                      >
-                        <Ionicons
-                          name={category.icon as any}
-                          size={24}
-                          color={COLORS.white}
-                        />
-                      </View>
-                      <ResponsiveText
-                        variant="caption1"
-                        weight="medium"
-                        color={COLORS.text.primary}
-                        style={styles.categoryTitle}
-                      >
-                        {category.title}
-                      </ResponsiveText>
-                    </TouchableOpacity>
-                  );
-                })}
+              <View style={styles.sectionHeader}>
+                <View style={styles.titleContainer}>
+                  <Ionicons
+                    name="grid-outline"
+                    size={20}
+                    color={COLORS.warning[500]}
+                    style={styles.titleIcon}
+                  />
+                  <ResponsiveText
+                    variant="h5"
+                    weight="bold"
+                    color={COLORS.text.primary}
+                    style={{ lineHeight: 24 }}
+                  >
+                    Service Categories
+                  </ResponsiveText>
+                </View>
               </View>
+
+              {categoriesLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ResponsiveText variant="body2" color={COLORS.text.secondary}>
+                    Loading categories...
+                  </ResponsiveText>
+                </View>
+              ) : categoriesError ? (
+                <View style={styles.errorContainer}>
+                  <ResponsiveText variant="body2" color={COLORS.error[500]}>
+                    Failed to load categories
+                  </ResponsiveText>
+                </View>
+              ) : groupedCategories.length > 0 ? (
+                <FlatList
+                  data={groupedCategories}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  keyExtractor={(_, index) => index.toString()}
+                  contentContainerStyle={styles.categoriesFlatListContainer}
+                  renderItem={({ item: categoryPair, index }) => (
+                    <View style={styles.categoryColumn}>
+                      {categoryPair.map((category, categoryIndex) => (
+                        <TouchableOpacity
+                          key={category.id}
+                          style={styles.categoryItem}
+                          onPress={() => {
+                            // Navigate to category-specific service listings
+                            router.push(
+                              `/(dashboard)/(user)/search?category=${category.slug}`
+                            );
+                          }}
+                        >
+                          <View
+                            style={[
+                              styles.categoryIcon,
+                              {
+                                backgroundColor: getCategoryColor(
+                                  index * 2 + categoryIndex
+                                ),
+                              },
+                            ]}
+                          >
+                            <Ionicons
+                              name={getCategoryIcon(category.name)}
+                              size={28}
+                              color={COLORS.white}
+                            />
+                          </View>
+                          <ResponsiveText
+                            variant="caption1"
+                            weight="medium"
+                            color={COLORS.text.primary}
+                            style={styles.categoryTitle}
+                            numberOfLines={2}
+                          >
+                            {category.name}
+                          </ResponsiveText>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                />
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <ResponsiveText variant="body2" color={COLORS.text.secondary}>
+                    No categories available
+                  </ResponsiveText>
+                </View>
+              )}
             </View>
 
             {/* View More Button */}
             <View style={styles.viewMoreContainer}>
-              <TouchableOpacity style={styles.viewMoreButton}>
+              <TouchableOpacity
+                style={styles.viewMoreButton}
+                onPress={() => {
+                  // Navigate to full categories screen
+                  router.push("/(dashboard)/(user)/categories");
+                }}
+              >
                 <ResponsiveText
                   variant="body2"
                   weight="medium"
@@ -268,119 +540,40 @@ export default function UserHomeScreen() {
                   View more
                 </ResponsiveText>
                 <Ionicons
-                  name="chevron-down"
+                  name="chevron-forward"
                   size={16}
                   color={COLORS.text.secondary}
                 />
               </TouchableOpacity>
             </View>
 
-            {/* Additional Content for Scrolling Test */}
-            <View style={styles.section}>
-              <ResponsiveText
-                variant="h4"
-                weight="bold"
-                color={COLORS.text.primary}
-                style={styles.sectionTitle}
-              >
-                Recent Activities
-              </ResponsiveText>
-              <View style={styles.activityItem}>
-                <ResponsiveText variant="body2" color={COLORS.text.secondary}>
-                  • You booked a fitness session yesterday
-                </ResponsiveText>
-              </View>
-              <View style={styles.activityItem}>
-                <ResponsiveText variant="body2" color={COLORS.text.secondary}>
-                  • New travel deals available for you
-                </ResponsiveText>
-              </View>
-              <View style={styles.activityItem}>
-                <ResponsiveText variant="body2" color={COLORS.text.secondary}>
-                  • Health checkup reminder for next week
-                </ResponsiveText>
-              </View>
-            </View>
+            {/* Promotion Banner Slider */}
+            <PromotionBannerSlider customMarginTop={-MARGIN.sm} />
 
-            <View style={styles.section}>
-              <ResponsiveText
-                variant="h4"
-                weight="bold"
-                color={COLORS.text.primary}
-                style={styles.sectionTitle}
-              >
-                App Features
-              </ResponsiveText>
-              <ResponsiveText
-                variant="body2"
-                color={COLORS.text.secondary}
-                style={styles.featureText}
-              >
-                Discover amazing services, book appointments, and manage your
-                activities all in one place. Our app provides a seamless
-                experience for all your needs.
-              </ResponsiveText>
-            </View>
+            {/* Popular Services Section */}
+            <PopularServicesSection
+              services={transformedPopularServices}
+              isLoading={popularServicesLoading}
+              error={popularServicesError?.message}
+              onViewMore={() => {
+                // Navigate to all services screen
+                router.push("/(dashboard)/(user)/services");
+              }}
+              onServicePress={(service) => {
+                // Navigate to service details
+                router.push(`/(dashboard)/service-details?id=${service.id}`);
+              }}
+            />
 
-            <View style={styles.section}>
-              <ResponsiveText
-                variant="h4"
-                weight="bold"
-                color={COLORS.text.primary}
-                style={styles.sectionTitle}
-              >
-                Customer Support
-              </ResponsiveText>
-              <ResponsiveText
-                variant="body2"
-                color={COLORS.text.secondary}
-                style={styles.featureText}
-              >
-                Need help? Our support team is available 24/7 to assist you with
-                any questions or concerns. Contact us through the app or call
-                our helpline.
-              </ResponsiveText>
-            </View>
+            {/* How It Works Section */}
+            <HowItWorksSection />
 
-            <View style={styles.section}>
-              <ResponsiveText
-                variant="h4"
-                weight="bold"
-                color={COLORS.text.primary}
-                style={styles.sectionTitle}
-              >
-                Privacy & Security
-              </ResponsiveText>
-              <ResponsiveText
-                variant="body2"
-                color={COLORS.text.secondary}
-                style={styles.featureText}
-              >
-                Your privacy and security are our top priorities. All your data
-                is encrypted and protected according to industry standards. We
-                never share your personal information with third parties.
-              </ResponsiveText>
-            </View>
-
-            <View style={styles.section}>
-              <ResponsiveText
-                variant="h4"
-                weight="bold"
-                color={COLORS.text.primary}
-                style={styles.sectionTitle}
-              >
-                Terms of Service
-              </ResponsiveText>
-              <ResponsiveText
-                variant="body2"
-                color={COLORS.text.secondary}
-                style={styles.featureText}
-              >
-                By using this app, you agree to our terms of service and privacy
-                policy. Please read them carefully before proceeding with any
-                transactions or bookings.
-              </ResponsiveText>
-            </View>
+            {/* App Reviews Section */}
+            <AppReviewsSection
+              reviews={appReviewsData?.reviews || []}
+              isLoading={appReviewsLoading}
+              error={appReviewsError?.message}
+            />
 
             {/* Bottom Spacing */}
             <View style={styles.bottomSpacing} />
@@ -455,7 +648,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.xl,
+    borderRadius: BORDER_RADIUS.xxxl,
     paddingHorizontal: PADDING.md,
     paddingVertical: PADDING.sm,
     shadowColor: COLORS.black,
@@ -463,7 +656,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    minHeight: 50,
+    minHeight: 46,
   },
   searchIcon: {
     marginRight: MARGIN.sm,
@@ -485,6 +678,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: MARGIN.md,
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  titleIcon: {
+    marginRight: 8,
   },
   favoriteServicesContainer: {
     paddingRight: PADDING.screen,
@@ -525,25 +725,30 @@ const styles = StyleSheet.create({
     gap: MARGIN.md,
   },
   categoryItem: {
-    width: "30%",
+    width: "100%",
     alignItems: "center",
-    marginBottom: MARGIN.md,
+    marginBottom: MARGIN.sm,
+    paddingHorizontal: PADDING.xs,
   },
   categoryIcon: {
     width: 60,
     height: 60,
-    borderRadius: 12,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: MARGIN.sm,
+    marginBottom: MARGIN.xs,
   },
   categoryTitle: {
     textAlign: "center",
+    fontSize: FONT_SIZE.caption1,
+    lineHeight: 16,
+    minHeight: 32, // Increased height
+    paddingHorizontal: 2, // Small padding to prevent text overflow
   },
   viewMoreContainer: {
     alignItems: "center",
-    marginTop: MARGIN.xl,
-    marginBottom: MARGIN.xl,
+    marginTop: MARGIN.xs,
+    marginBottom: MARGIN.sm,
   },
   viewMoreButton: {
     flexDirection: "row",
@@ -561,5 +766,30 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 100,
+  },
+  loadingContainer: {
+    padding: PADDING.lg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorContainer: {
+    padding: PADDING.lg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyContainer: {
+    padding: PADDING.lg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  // New styles for horizontal categories layout
+  categoriesFlatListContainer: {
+    paddingRight: PADDING.screen,
+  },
+  categoryColumn: {
+    width: screenWidth * 0.28, // 28% of screen width for each column (narrower columns)
+    justifyContent: "space-around",
+    alignItems: "center",
+    marginHorizontal: MARGIN.xs,
   },
 });

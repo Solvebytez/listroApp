@@ -2,3 +2,6 @@
 
 // Profile components
 export * from "./profile";
+
+// Session management components
+export { SessionExpiryAlert } from "./SessionExpiryAlert";

@@ -17,7 +17,6 @@ export default function VendorProfileScreen() {
   // Use React Query to fetch user data
   const { data: user, isLoading, error } = useUser();
 
-
   // Transform user data to ProfileData format
   const vendorProfileData: ProfileData | null = user
     ? {

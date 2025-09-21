@@ -5,7 +5,6 @@ import { router } from "expo-router";
 
 // Get the secret key from app config
 const getSecretKey = (): string => {
-
   const secretKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_SECRET_KEY;
 
   if (!secretKey) {
@@ -121,7 +120,6 @@ export const authHandle = async (
           "userId",
         ]);
 
-
       if (
         !storedToken[1] ||
         !storedRole[1] ||
@@ -130,7 +128,6 @@ export const authHandle = async (
       ) {
         throw new Error("Failed to store authentication data in AsyncStorage");
       }
-
 
       return authResponse;
     } else {
@@ -366,7 +363,6 @@ export const clearAuthData = async () => {
  */
 export const logout = async () => {
   try {
-
     // First, try to call backend logout endpoint
     try {
       const { api } = await import("@/services/api");
@@ -435,8 +431,15 @@ export const switchRole = async (newRole: string) => {
     const response = await userService.switchRole(newRole);
 
     if ((response as any).success) {
-      // Update AsyncStorage with new role
-      await AsyncStorage.setItem("userRole", newRole.toUpperCase());
+      const responseData = (response as any).data;
+
+      // Update AsyncStorage with new role, new access token, and updated user data
+      await AsyncStorage.multiSet([
+        ["userRole", newRole.toUpperCase()],
+        ["accessToken", responseData.accessToken], // Update with new token
+        ["tokenTimestamp", Date.now().toString()], // Update timestamp
+        ["userData", JSON.stringify(responseData.user)], // Update user data with new role
+      ]);
 
       // Navigate to the appropriate dashboard
       navigateToDashboard(newRole.toUpperCase());

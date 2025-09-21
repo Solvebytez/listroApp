@@ -20,7 +20,6 @@ export default function UserProfileScreen() {
   // Use React Query to fetch user data
   const { data: user, isLoading, error } = useUser();
 
-
   // Transform user data to ProfileData format
   const userProfileData: ProfileData | null = user
     ? {

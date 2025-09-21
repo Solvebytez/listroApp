@@ -1,5 +1,5 @@
-import React from "react";
-import { View, StyleSheet, TouchableOpacity, Image } from "react-native";
+import React, { useState } from "react";
+import { View, StyleSheet, TouchableOpacity, Image, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, MARGIN, PADDING, BORDER_RADIUS } from "@/constants";
 import { ResponsiveText, ResponsiveCard } from "@/components/UI";
@@ -11,8 +11,10 @@ export interface VendorServiceListing {
   description: string;
   price: string;
   originalPrice?: string; // For showing strikethrough original price
+  priceDisplayText?: string; // Additional info about the price (e.g., "3 services", "Standard Service")
+  serviceCount?: number; // Number of services in this listing
   category: string;
-  status: "active" | "inactive" | "pending";
+  status: "active" | "inactive" | "pending" | "rejected";
   rating: number;
   reviewCount: number;
   views: number;
@@ -24,13 +26,20 @@ export interface VendorServiceListing {
 
 interface VendorListCardProps {
   listing: VendorServiceListing;
-  onPress?: (listing: VendorListCardProps["listing"]) => void;
+  onPress?: (listing: VendorServiceListing) => void;
+  onEdit?: (listing: VendorServiceListing) => void;
+  onToggleStatus?: (listing: VendorServiceListing) => void;
+  onDelete?: (listing: VendorServiceListing) => void;
 }
 
 export const VendorListCard: React.FC<VendorListCardProps> = ({
   listing,
   onPress,
+  onEdit,
+  onToggleStatus,
+  onDelete,
 }) => {
+  const [showMenu, setShowMenu] = useState(false);
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -39,6 +48,8 @@ export const VendorListCard: React.FC<VendorListCardProps> = ({
         return COLORS.error[500];
       case "pending":
         return COLORS.warning[500];
+      case "rejected":
+        return COLORS.error[600];
       default:
         return COLORS.text.secondary;
     }
@@ -82,7 +93,20 @@ export const VendorListCard: React.FC<VendorListCardProps> = ({
     <ResponsiveCard variant="outlined" style={styles.card}>
       {/* Image Header with Badges */}
       <View style={styles.imageContainer}>
-        <Image source={{ uri: listing.imageUrl }} style={styles.serviceImage} />
+        <Image
+          source={{ uri: listing.imageUrl }}
+          style={styles.serviceImage}
+          onError={(error) => {
+            console.log("Image load error:", error.nativeEvent.error);
+            console.log("Failed URL:", listing.imageUrl);
+          }}
+          onLoad={() => {
+            console.log("Image loaded successfully:", listing.imageUrl);
+          }}
+        />
+
+        {/* Black Transparent Overlay */}
+        <View style={styles.imageOverlay} />
 
         {/* Status Badges Overlay */}
         <View style={styles.badgesContainer}>
@@ -105,6 +129,17 @@ export const VendorListCard: React.FC<VendorListCardProps> = ({
             </View>
           ))}
         </View>
+
+        {/* Three Dots Menu */}
+        <View style={styles.menuContainer}>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => setShowMenu(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="ellipsis-vertical" size={20} color={COLORS.white} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Service Details */}
@@ -117,12 +152,12 @@ export const VendorListCard: React.FC<VendorListCardProps> = ({
             color={COLORS.text.primary}
             style={styles.serviceTitle}
           >
-            {listing.title}
+            {listing.title.charAt(0).toUpperCase() + listing.title.slice(1)}
           </ResponsiveText>
           <View style={styles.categoryContainer}>
             <Ionicons name="pricetag" size={12} color={COLORS.primary[300]} />
             <ResponsiveText
-              variant="caption1"
+              variant="caption2"
               weight="medium"
               color={COLORS.primary[300]}
               style={styles.category}
@@ -188,8 +223,25 @@ export const VendorListCard: React.FC<VendorListCardProps> = ({
             </ResponsiveText>
           </View>
 
+          {/* Service Count - Right side */}
+          {listing.serviceCount && listing.serviceCount > 1 && (
+            <View style={styles.metricItem}>
+              <View style={styles.metricIconContainer}>
+                <Ionicons name="list" size={14} color={COLORS.text.secondary} />
+              </View>
+              <ResponsiveText
+                variant="caption1"
+                weight="medium"
+                color={COLORS.text.secondary}
+                style={styles.metricText}
+              >
+                {listing.serviceCount} Services Available
+              </ResponsiveText>
+            </View>
+          )}
+
           {/* Rating */}
-          {listing.rating > 0 && (
+          {listing.rating !== undefined && listing.rating !== null && (
             <View style={styles.metricItem}>
               <View style={styles.metricIconContainer}>
                 <Ionicons name="star" size={14} color="#FF8C00" />
@@ -200,7 +252,28 @@ export const VendorListCard: React.FC<VendorListCardProps> = ({
                 color={COLORS.text.primary}
                 style={styles.metricText}
               >
-                {listing.rating} ({listing.reviewCount})
+                {listing.rating > 0 ? listing.rating : "No rating"}
+              </ResponsiveText>
+            </View>
+          )}
+
+          {/* Review Count */}
+          {listing.reviewCount > 0 && (
+            <View style={styles.metricItem}>
+              <View style={styles.metricIconContainer}>
+                <Ionicons
+                  name="chatbubble"
+                  size={14}
+                  color={COLORS.primary[300]}
+                />
+              </View>
+              <ResponsiveText
+                variant="caption1"
+                weight="medium"
+                color={COLORS.text.secondary}
+                style={styles.metricText}
+              >
+                {listing.reviewCount} reviews
               </ResponsiveText>
             </View>
           )}
@@ -218,6 +291,134 @@ export const VendorListCard: React.FC<VendorListCardProps> = ({
           </ResponsiveText>
         </View>
       </View>
+
+      {/* Action Menu Modal */}
+      <Modal
+        visible={showMenu}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMenu(false)}
+        >
+          <View style={styles.menuModal}>
+            <View style={styles.menuHeader}>
+              <ResponsiveText
+                variant="h6"
+                weight="medium"
+                color={COLORS.text.primary}
+              >
+                {listing.title.charAt(0).toUpperCase() + listing.title.slice(1)}
+              </ResponsiveText>
+              <TouchableOpacity
+                onPress={() => setShowMenu(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons
+                  name="close"
+                  size={20}
+                  color={COLORS.text.secondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.menuItems}>
+              {/* Edit Option */}
+              {onEdit && (
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setShowMenu(false);
+                    onEdit(listing);
+                  }}
+                >
+                  <View style={styles.menuItemIcon}>
+                    <Ionicons
+                      name="create-outline"
+                      size={20}
+                      color={COLORS.primary[500]}
+                    />
+                  </View>
+                  <ResponsiveText
+                    variant="body1"
+                    weight="medium"
+                    color={COLORS.text.primary}
+                  >
+                    Edit Listing
+                  </ResponsiveText>
+                </TouchableOpacity>
+              )}
+
+              {/* Toggle Status Option */}
+              {onToggleStatus &&
+                (listing.status === "active" ||
+                  listing.status === "inactive") && (
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      onToggleStatus(listing);
+                    }}
+                  >
+                    <View style={styles.menuItemIcon}>
+                      <Ionicons
+                        name={
+                          listing.status === "active"
+                            ? "pause-outline"
+                            : "play-outline"
+                        }
+                        size={20}
+                        color={
+                          listing.status === "active"
+                            ? COLORS.warning[500]
+                            : COLORS.success[500]
+                        }
+                      />
+                    </View>
+                    <ResponsiveText
+                      variant="body1"
+                      weight="medium"
+                      color={COLORS.text.primary}
+                    >
+                      {listing.status === "active"
+                        ? "Turn Off Service"
+                        : "Turn On Service"}
+                    </ResponsiveText>
+                  </TouchableOpacity>
+                )}
+
+              {/* Delete Option */}
+              {onDelete && (
+                <TouchableOpacity
+                  style={[styles.menuItem, styles.deleteMenuItem]}
+                  onPress={() => {
+                    setShowMenu(false);
+                    onDelete(listing);
+                  }}
+                >
+                  <View style={[styles.menuItemIcon, styles.deleteIcon]}>
+                    <Ionicons
+                      name="trash-outline"
+                      size={20}
+                      color={COLORS.error[500]}
+                    />
+                  </View>
+                  <ResponsiveText
+                    variant="body1"
+                    weight="medium"
+                    color={COLORS.error[500]}
+                  >
+                    Delete Listing
+                  </ResponsiveText>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </ResponsiveCard>
   );
 
@@ -239,10 +440,15 @@ export const VendorListCard: React.FC<VendorListCardProps> = ({
 
 const styles = StyleSheet.create({
   cardWrapper: {
-    marginBottom: MARGIN.md,
+    marginBottom: MARGIN.lg,
   },
   card: {
     overflow: "hidden",
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   imageContainer: {
     position: "relative",
@@ -254,6 +460,14 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     resizeMode: "cover",
+  },
+  imageOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
   },
   badgesContainer: {
     position: "absolute",
@@ -267,15 +481,21 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: PADDING.sm,
     paddingVertical: PADDING.xs,
-    borderRadius: BORDER_RADIUS.xl,
+    borderRadius: BORDER_RADIUS.md,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 1,
   },
   badgeText: {
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: "600",
   },
   detailsContainer: {
-    paddingTop: PADDING.lg - 10,
-    paddingHorizontal: PADDING.lg - 20,
-    paddingBottom: PADDING.xs,
+    paddingTop: PADDING.md,
+    paddingHorizontal: PADDING.xs,
+    paddingBottom: PADDING.sm,
   },
   titleSection: {
     marginBottom: MARGIN.md,
@@ -283,22 +503,29 @@ const styles = StyleSheet.create({
   serviceTitle: {
     marginBottom: MARGIN.sm,
     lineHeight: 24,
+    letterSpacing: 0.1,
   },
   categoryContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: MARGIN.xs,
+    backgroundColor: COLORS.primary[50],
+    paddingHorizontal: PADDING.sm,
+    paddingVertical: PADDING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    alignSelf: "flex-start",
   },
   category: {
-    // Category styling
+    fontSize: 12,
+    fontWeight: "500",
   },
   pricingSection: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: MARGIN.lg,
-    paddingVertical: PADDING.sm,
-    paddingHorizontal: PADDING.md,
+    marginBottom: MARGIN.md,
+    paddingVertical: PADDING.md,
+    paddingHorizontal: PADDING.sm,
     backgroundColor: COLORS.neutral[50],
     borderRadius: BORDER_RADIUS.md,
   },
@@ -309,34 +536,45 @@ const styles = StyleSheet.create({
   },
   originalPrice: {
     textDecorationLine: "line-through",
-    opacity: 0.7,
+    opacity: 0.6,
+    fontSize: 14,
   },
   currentPrice: {
-    // Current price styling
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
   statusIndicator: {
     flexDirection: "row",
     alignItems: "center",
     gap: MARGIN.xs,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: PADDING.sm,
+    paddingVertical: PADDING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    borderWidth: 0.5,
+    borderColor: COLORS.border.light,
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   statusText: {
-    // Status text styling
+    fontSize: 12,
+    fontWeight: "600",
   },
   metricsRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: MARGIN.sm,
-    gap: MARGIN.md,
   },
   metricItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: MARGIN.xs,
+    flex: 1,
   },
   metricIconContainer: {
     width: 24,
@@ -347,18 +585,110 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   metricText: {
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: "500",
+    color: COLORS.text.secondary,
   },
   updateTimeContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: MARGIN.xs,
-    paddingTop: PADDING.md,
-    borderTopWidth: 1,
+    paddingTop: PADDING.sm,
+    borderTopWidth: 0.5,
     borderTopColor: COLORS.border.light,
+    marginHorizontal: -PADDING.xs,
+    paddingHorizontal: PADDING.xs,
+    paddingBottom: PADDING.xs,
   },
   updateTime: {
-    fontSize: 12,
+    fontSize: 11,
+    color: COLORS.text.secondary,
+  },
+  // Three dots menu styles
+  menuContainer: {
+    position: "absolute",
+    top: MARGIN.md,
+    right: MARGIN.md,
+  },
+  menuButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  menuModal: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.xl,
+    marginHorizontal: PADDING.lg,
+    minWidth: 300,
+    maxWidth: 340,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  menuHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: PADDING.lg,
+    paddingVertical: PADDING.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border.light,
+    backgroundColor: COLORS.neutral[25],
+  },
+  closeButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.neutral[100],
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  menuItems: {
+    paddingVertical: PADDING.sm,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: PADDING.lg,
+    paddingVertical: PADDING.lg,
+  },
+  menuItemIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.neutral[50],
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: MARGIN.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border.light,
+  },
+  deleteMenuItem: {
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border.light,
+    marginTop: MARGIN.xs,
+    backgroundColor: COLORS.error[25],
+  },
+  deleteIcon: {
+    backgroundColor: COLORS.error[50],
+    borderColor: COLORS.error[200],
   },
 });
 

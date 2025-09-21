@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -11,8 +11,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ResponsiveText,
   ResponsiveCard,
@@ -29,7 +29,11 @@ import { useBusinessAddresses } from "@/hooks/useBusinessAddresses";
 import {
   serviceService,
   CreateServiceListingRequest,
+  ServiceListing,
+  FlexibleUpdateRequest,
+  BusinessHours as BusinessHoursType,
 } from "@/services/service";
+import { useUpdateServiceListingFlexible } from "@/hooks/useServiceListings";
 import {
   COLORS,
   FONT_SIZE,
@@ -48,20 +52,18 @@ interface FormData {
   description: string;
   image: string | null;
   selectedAddressId: string | null;
-  businessHours: {
-    [key: string]: {
-      isOpen: boolean;
-      openTime: string;
-      closeTime: string;
-    };
-  };
+  businessHours: BusinessHoursType;
 }
 
 // Remove old static categories - now using dynamic CategorySelector
 
-export default function AddListingScreen() {
+export default function EditListingScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
+
+  // Use the optimistic update mutation
+  const updateListingMutation = useUpdateServiceListingFlexible();
   const { data: existingAddresses = [] } = useBusinessAddresses();
   const [formData, setFormData] = useState<FormData>({
     title: "",
@@ -86,6 +88,13 @@ export default function AddListingScreen() {
   const [contactNumberError, setContactNumberError] = useState<string>("");
   const [whatsappNumberError, setWhatsappNumberError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  // Use mutation loading state
+  const isUpdating = updateListingMutation.isPending;
+
+  // Combined loading state for button
+  const isButtonLoading = isUpdating || isUploadingImage;
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [showMultipleServices, setShowMultipleServices] = useState(false);
@@ -98,6 +107,102 @@ export default function AddListingScreen() {
       discountPrice: "",
     },
   ]);
+
+  // Fetch existing listing data
+  const { data: existingListing, isLoading: isListingLoading } = useQuery({
+    queryKey: ["serviceListing", id],
+    queryFn: () => serviceService.getServiceListingById(id!),
+    enabled: !!id,
+  });
+
+  // Populate form when listing data is loaded
+  useEffect(() => {
+    if (existingListing) {
+      console.log("=== POPULATING FORM WITH EXISTING DATA ===");
+      console.log("Existing Listing:", existingListing);
+      console.log("Category ID:", existingListing.categoryId);
+      console.log("Category Path:", existingListing.categoryPath);
+
+      // Get business hours from the first service (if available)
+      const firstService = existingListing.services?.[0];
+      const existingBusinessHours = firstService?.businessHours || {
+        monday: { isOpen: true, openTime: "09:00", closeTime: "18:00" },
+        tuesday: { isOpen: true, openTime: "09:00", closeTime: "18:00" },
+        wednesday: { isOpen: true, openTime: "09:00", closeTime: "18:00" },
+        thursday: { isOpen: true, openTime: "09:00", closeTime: "18:00" },
+        friday: { isOpen: true, openTime: "09:00", closeTime: "18:00" },
+        saturday: { isOpen: true, openTime: "09:00", closeTime: "18:00" },
+        sunday: { isOpen: false, openTime: "09:00", closeTime: "18:00" },
+      };
+
+      const newFormData = {
+        title: existingListing.title || "",
+        contactNumber: existingListing.contactNumber || "",
+        whatsappNumber: existingListing.whatsappNumber || "",
+        categoryId: existingListing.categoryId || null,
+        categoryPath: existingListing.categoryPath || [],
+        description: existingListing.description || "",
+        image: existingListing.image || null,
+        selectedAddressId: (existingListing as any).addressId || null,
+        businessHours: existingBusinessHours,
+      };
+
+      console.log("Setting Form Data:", newFormData);
+      setFormData(newFormData);
+
+      // Populate services
+      if (existingListing.services && existingListing.services.length > 0) {
+        const servicesData = existingListing.services.map((service, index) => ({
+          id: index + 1,
+          name: service.name || "",
+          description: service.description || "",
+          price: service.price?.toString() || "",
+          discountPrice: service.discountPrice?.toString() || "",
+        }));
+        setMultipleServices(servicesData);
+        setShowMultipleServices(true); // Always show services section when editing
+      } else {
+        // If no services exist, create a default empty service for editing
+        setMultipleServices([
+          {
+            id: 1,
+            name: "",
+            description: "",
+            price: "",
+            discountPrice: "",
+          },
+        ]);
+        setShowMultipleServices(true); // Show services section for editing
+      }
+
+      console.log("Services populated:", multipleServices);
+      console.log("Address fields:", {
+        selectedAddressId: (existingListing as any).selectedAddressId,
+        addressId: (existingListing as any).addressId,
+        businessAddressId: (existingListing as any).businessAddressId,
+        address: (existingListing as any).address,
+      });
+      console.log("Available Addresses:", existingAddresses);
+
+      // Log final state after a small delay to ensure state updates
+      setTimeout(() => {
+        console.log("Final Form Data (after state update):", {
+          title: formData.title,
+          categoryId: formData.categoryId,
+          selectedAddressId: formData.selectedAddressId,
+          servicesCount: multipleServices.length,
+          addressId: (existingListing as any).addressId,
+        });
+        console.log("Form populated with existing data");
+        console.log("===============================");
+      }, 100);
+    }
+  }, [existingListing, existingAddresses]);
+
+  // Debug: Log when formData changes
+  useEffect(() => {
+    console.log("FormData state changed:", formData);
+  }, [formData]);
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({
@@ -131,10 +236,6 @@ export default function AddListingScreen() {
     categoryId: string | null,
     categoryPath: string[]
   ) => {
-    console.log("=== PARENT HANDLE CATEGORY SELECT ===");
-    console.log("Category ID:", categoryId);
-    console.log("Category Path:", categoryPath);
-    console.log("=====================================");
     setFormData((prev) => ({
       ...prev,
       categoryId,
@@ -341,8 +442,6 @@ export default function AddListingScreen() {
     }
 
     try {
-      setIsSubmitting(true);
-
       // Get the selected address details
       const selectedAddress = existingAddresses.find(
         (addr) => addr.id === formData.selectedAddressId
@@ -405,6 +504,8 @@ export default function AddListingScreen() {
         console.log("Local image URI:", formData.image);
 
         try {
+          setIsUploadingImage(true); // Start image upload loading
+
           // Create a mock image asset object for the upload service
           const imageAsset = {
             uri: formData.image,
@@ -419,11 +520,24 @@ export default function AddListingScreen() {
           console.log("Image uploaded successfully:", imageUrl);
         } catch (uploadError) {
           console.error("Image upload failed:", uploadError);
-          Alert.alert(
-            "Upload Failed",
-            "Failed to upload service image. Please try again."
-          );
+          console.error("Upload error details:", {
+            message: (uploadError as any)?.message,
+            response: (uploadError as any)?.response?.data,
+            status: (uploadError as any)?.response?.status,
+          });
+
+          let errorMessage =
+            "Failed to upload service image. Please try again.";
+          if ((uploadError as any)?.response?.data?.message) {
+            errorMessage = (uploadError as any).response.data.message;
+          } else if ((uploadError as any)?.message) {
+            errorMessage = (uploadError as any).message;
+          }
+
+          Alert.alert("Upload Failed", errorMessage);
           return;
+        } finally {
+          setIsUploadingImage(false); // Stop image upload loading
         }
       }
 
@@ -437,7 +551,6 @@ export default function AddListingScreen() {
         whatsappNumber: formData.whatsappNumber.trim(),
         image: imageUrl || undefined,
         selectedAddressId: formData.selectedAddressId!,
-        businessHours: formData.businessHours,
         services: validServices.map((service) => ({
           name: service.name.trim(),
           description: service.description.trim(),
@@ -445,6 +558,7 @@ export default function AddListingScreen() {
           discountPrice: service.discountPrice
             ? parseFloat(service.discountPrice)
             : undefined,
+          businessHours: formData.businessHours,
         })),
       };
 
@@ -452,26 +566,151 @@ export default function AddListingScreen() {
       console.log("API Data:", JSON.stringify(apiData, null, 2));
       console.log("========================");
 
-      // Call the API to create the service listing
-      const createdListing = await serviceService.createServiceListing(apiData);
+      // Create flexible update payload with only changed fields
+      const updatePayload: FlexibleUpdateRequest = {};
 
-      console.log("=== API RESPONSE ===");
-      console.log("Created Listing:", JSON.stringify(createdListing, null, 2));
-      console.log("===================");
+      // Check for basic field changes
+      if (existingListing && formData.title.trim() !== existingListing.title) {
+        updatePayload.title = formData.title.trim();
+        console.log(
+          "📝 Title changed:",
+          existingListing.title,
+          "->",
+          formData.title.trim()
+        );
+      }
 
-      // Invalidate and refetch all service listings cache
-      await queryClient.invalidateQueries({
-        queryKey: ["serviceListings"],
-      });
+      if (
+        existingListing &&
+        formData.description.trim() !== existingListing.description
+      ) {
+        updatePayload.description = formData.description.trim();
+        console.log("📝 Description changed");
+      }
+
+      if (
+        existingListing &&
+        formData.contactNumber.trim() !== existingListing.contactNumber
+      ) {
+        updatePayload.contactNumber = formData.contactNumber.trim();
+        console.log("📝 Contact number changed");
+      }
+
+      if (
+        existingListing &&
+        formData.whatsappNumber.trim() !== existingListing.whatsappNumber
+      ) {
+        updatePayload.whatsappNumber = formData.whatsappNumber.trim();
+        console.log("📝 WhatsApp number changed");
+      }
+
+      if (existingListing && imageUrl !== existingListing.image) {
+        updatePayload.image = imageUrl || undefined;
+        console.log("📝 Image changed");
+        console.log("Old image:", existingListing.image);
+        console.log("New image:", imageUrl);
+      } else {
+        console.log("📝 No image change detected");
+        console.log("Existing image:", existingListing?.image);
+        console.log("New image URL:", imageUrl);
+        console.log("Are they equal?", imageUrl === existingListing?.image);
+      }
+
+      // Check for address change
+      if (
+        existingListing &&
+        formData.selectedAddressId !== existingListing.addressId
+      ) {
+        updatePayload.addressId = formData.selectedAddressId!;
+        console.log(
+          "🏠 Address changed:",
+          existingListing.addressId,
+          "->",
+          formData.selectedAddressId
+        );
+      }
+
+      // Check for category change
+      if (
+        existingListing &&
+        formData.categoryId !== existingListing.categoryId
+      ) {
+        updatePayload.categoryId = formData.categoryId!;
+        updatePayload.categoryPath = formData.categoryPath;
+        console.log(
+          "📂 Category changed:",
+          existingListing.categoryId,
+          "->",
+          formData.categoryId
+        );
+      }
+
+      // Check for services changes
+      const currentServices = existingListing?.services || [];
+      const newServices = validServices.map((service) => ({
+        name: service.name.trim(),
+        description: service.description.trim(),
+        price: parseFloat(service.price) || 0,
+        discountPrice: service.discountPrice
+          ? parseFloat(service.discountPrice)
+          : undefined,
+        businessHours: formData.businessHours,
+      }));
+
+      // Simple services comparison - if different, replace all
+      const currentServicesForComparison = currentServices.map((s) => ({
+        name: s.name,
+        description: s.description,
+        price: s.price,
+        discountPrice: s.discountPrice,
+        businessHours: s.businessHours,
+      }));
+
+      const servicesChanged =
+        JSON.stringify(currentServicesForComparison) !==
+        JSON.stringify(newServices);
+
+      if (servicesChanged) {
+        updatePayload.services = {
+          replace: newServices,
+        };
+        console.log("🔧 Services changed - replacing all services");
+        console.log("Old services:", currentServices.length);
+        console.log("New services:", newServices.length);
+        console.log("Old services data:", currentServicesForComparison);
+        console.log("New services data:", newServices);
+      } else {
+        console.log("✅ No services changes detected");
+      }
+
+      console.log("=== FLEXIBLE UPDATE PAYLOAD ===");
+      console.log("Update Payload:", JSON.stringify(updatePayload, null, 2));
+      console.log("===============================");
+
+      // Only call API if there are changes
+      if (Object.keys(updatePayload).length === 0) {
+        Alert.alert("No Changes", "No changes were made to the listing.");
+        return;
+      }
+
+      // Use optimistic update mutation
+      const updatedListing = (await updateListingMutation.mutateAsync({
+        id: id!,
+        data: updatePayload,
+      })) as any;
+
+      console.log("=== OPTIMISTIC UPDATE SUCCESS ===");
+      console.log("Updated Listing:", JSON.stringify(updatedListing, null, 2));
+      console.log("=================================");
 
       // Show success alert
       Alert.alert(
         "Success!",
-        `Your service listing has been created successfully!\n\nTitle: ${
-          createdListing.title
-        }\nServices: ${
-          createdListing.services?.length || 0
-        }\nCategory: ${createdListing.categoryPath.join(" > ")}`,
+        `Your service listing has been updated successfully!\n\nTitle: ${
+          updatedListing.data?.title || "N/A"
+        }\nServices: ${updatedListing.data?.services?.length || 0}\nCategory: ${
+          updatedListing.data?.categoryPath?.join(" > ") || "N/A"
+        }`,
         [
           {
             text: "OK",
@@ -482,9 +721,9 @@ export default function AddListingScreen() {
         ]
       );
     } catch (error: any) {
-      console.error("Error creating service listing:", error);
+      console.error("Error updating service listing:", error);
 
-      let errorMessage = "Failed to create service listing. Please try again.";
+      let errorMessage = "Failed to update service listing. Please try again.";
       let shouldRefreshCategories = false;
 
       if (error.response?.data?.message) {
@@ -522,9 +761,36 @@ export default function AddListingScreen() {
         },
       ]);
     } finally {
-      setIsSubmitting(false);
+      // Mutation handles loading state automatically
     }
   };
+
+  // Show loading state while fetching listing data
+  if (isListingLoading) {
+    return (
+      <>
+        <GlobalStatusBar
+          barStyle="light-content"
+          backgroundColor={COLORS.primary[500]}
+          translucent={false}
+        />
+        <SafeAreaView style={styles.safeArea} edges={["left", "right"]}>
+          <View style={styles.container}>
+            <AppHeader
+              onBackPress={() => router.back()}
+              title="Edit Listing"
+              subtext="Loading listing data..."
+            />
+            <View style={styles.loadingContainer}>
+              <ResponsiveText variant="h6" color={COLORS.text.secondary}>
+                Loading listing data...
+              </ResponsiveText>
+            </View>
+          </View>
+        </SafeAreaView>
+      </>
+    );
+  }
 
   return (
     <>
@@ -538,8 +804,8 @@ export default function AddListingScreen() {
           {/* Header */}
           <AppHeader
             onBackPress={() => router.back()}
-            title="Add New Listing"
-            subtext="Create a new service offering"
+            title="Edit Listing"
+            subtext="Update your service offering"
           />
 
           <ScrollView
@@ -736,14 +1002,6 @@ export default function AddListingScreen() {
                 </View>
               </View>
             </ResponsiveCard>
-
-            {/* Business Hours Section */}
-            <BusinessHours
-              businessHours={formData.businessHours}
-              onBusinessHoursChange={(businessHours) =>
-                setFormData((prev) => ({ ...prev, businessHours }))
-              }
-            />
 
             {/* Business Address Section */}
             <View style={styles.addAddressSection}>
@@ -1054,6 +1312,14 @@ export default function AddListingScreen() {
               </View>
             )}
 
+            {/* Business Hours Section */}
+            <BusinessHours
+              businessHours={formData.businessHours}
+              onBusinessHoursChange={(businessHours) =>
+                setFormData((prev) => ({ ...prev, businessHours }))
+              }
+            />
+
             {/* Bottom Spacing for Fixed Button */}
             <View style={styles.bottomSpacing} />
           </ScrollView>
@@ -1061,12 +1327,18 @@ export default function AddListingScreen() {
           {/* Fixed Bottom Button */}
           <View style={styles.fixedBottomButton}>
             <ResponsiveButton
-              title="Create Listing"
+              title={
+                isUploadingImage
+                  ? "Uploading Image..."
+                  : isUpdating
+                  ? "Updating..."
+                  : "Update Listing"
+              }
               variant="primary"
               size="large"
               onPress={handleSubmit}
-              loading={isSubmitting}
-              disabled={isSubmitting}
+              loading={isButtonLoading}
+              disabled={isButtonLoading}
               style={styles.submitButton}
             />
           </View>
@@ -1501,5 +1773,11 @@ const styles = StyleSheet.create({
   },
   formSaveButton: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: PADDING.xl,
   },
 });

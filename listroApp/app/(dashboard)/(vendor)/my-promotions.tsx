@@ -5,6 +5,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  FlatList,
+  ActivityIndicator,
+  Image,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +20,12 @@ import {
   GlobalStatusBar,
   AppHeader,
 } from "@/components";
+import {
+  useVendorPromotionsInfinite,
+  flattenInfinitePromotions,
+  useDeletePromotion,
+  useUpdatePromotion,
+} from "@/hooks/usePromotions";
 import {
   COLORS,
   FONT_SIZE,
@@ -50,123 +60,56 @@ export interface VendorPromotion {
 
 export default function MyPromotionsScreen() {
   const router = useRouter();
-  const [promotions, setPromotions] = useState<VendorPromotion[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<
     "all" | "active" | "pending" | "inactive" | "expired"
   >("all");
 
-  // Mock data for promotions
+  // Dropdown menu state
+  const [showMenu, setShowMenu] = useState(false);
+  const [selectedPromotion, setSelectedPromotion] = useState<any>(null);
+
+  // State for custom confirmation modal
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    promotion: any | null;
+    action: string;
+    newToggle?: boolean;
+  }>({
+    promotion: null,
+    action: "",
+    newToggle: false,
+  });
+
+  // Use infinite scroll hook for promotions
+  const {
+    data: infiniteData,
+    isLoading,
+    isError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useVendorPromotionsInfinite(
+    filterStatus === "all" ? undefined : (filterStatus as "active" | "inactive")
+  );
+
+  // Flatten the infinite query data
+  const promotions = flattenInfinitePromotions(infiniteData);
+
+  // Delete promotion mutation
+  const deletePromotionMutation = useDeletePromotion();
+
+  // Update promotion mutation
+  const updatePromotionMutation = useUpdatePromotion();
+
+  // Handle error state
   useEffect(() => {
-    const fetchPromotions = async () => {
-      try {
-        setIsLoading(true);
-        // TODO: Implement actual API call when backend is ready
-        // const response = await promotionService.getMyPromotions();
-        // setPromotions(response.data);
-
-        // Mock data for UI development
-        setPromotions([
-          {
-            id: "1",
-            title: "Summer Wellness Special",
-            description:
-              "Get 20% off on all massage therapy sessions this summer",
-            discountType: "percentage",
-            discountValue: "20%",
-            originalPrice: "$120",
-            discountedPrice: "$96",
-            category: "Massage Therapy",
-            status: "active",
-            startDate: "2024-06-01T00:00:00Z",
-            endDate: "2024-08-31T23:59:59Z",
-            views: 1250,
-            clicks: 89,
-            conversions: 23,
-            imageUrl:
-              "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400&h=300&fit=crop",
-            badges: ["Live", "Popular", "Summer Special"],
-            createdAt: "2024-05-15T10:00:00Z",
-            updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          },
-          {
-            id: "2",
-            title: "New Customer Welcome",
-            description: "First-time customers get $25 off their first service",
-            discountType: "fixed",
-            discountValue: "$25",
-            originalPrice: "$95",
-            discountedPrice: "$70",
-            category: "All Services",
-            status: "active",
-            startDate: "2024-01-01T00:00:00Z",
-            endDate: "2024-12-31T23:59:59Z",
-            views: 890,
-            clicks: 156,
-            conversions: 45,
-            imageUrl:
-              "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop",
-            badges: ["Live", "New Customer"],
-            createdAt: "2024-01-01T09:00:00Z",
-            updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          },
-          {
-            id: "3",
-            title: "Holiday Spa Package",
-            description:
-              "Special holiday package with facial and massage combo",
-            discountType: "percentage",
-            discountValue: "15%",
-            originalPrice: "$200",
-            discountedPrice: "$170",
-            category: "Spa Package",
-            status: "pending",
-            startDate: "2024-12-01T00:00:00Z",
-            endDate: "2024-12-31T23:59:59Z",
-            views: 0,
-            clicks: 0,
-            conversions: 0,
-            imageUrl:
-              "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=400&h=300&fit=crop",
-            badges: ["Pending Approval", "Holiday Special"],
-            createdAt: "2024-11-25T15:00:00Z",
-            updatedAt: "2024-11-25T15:00:00Z",
-          },
-          {
-            id: "4",
-            title: "Weekend Warrior Deal",
-            description: "Weekend special on all fitness and wellness services",
-            discountType: "percentage",
-            discountValue: "10%",
-            originalPrice: "$140",
-            discountedPrice: "$126",
-            category: "Fitness & Wellness",
-            status: "expired",
-            startDate: "2024-10-01T00:00:00Z",
-            endDate: "2024-10-31T23:59:59Z",
-            views: 567,
-            clicks: 34,
-            conversions: 12,
-            imageUrl:
-              "https://images.unsplash.com/photo-1596178060810-4d0b5b3b3b3b?w=400&h=300&fit=crop",
-            badges: ["Expired"],
-            createdAt: "2024-09-25T11:00:00Z",
-            updatedAt: "2024-10-31T23:59:59Z",
-          },
-        ]);
-      } catch (error) {
-        console.error("Error fetching promotions:", error);
-        Alert.alert(
-          "Error",
-          "Failed to load your promotions. Please try again."
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPromotions();
-  }, []);
+    if (isError && error) {
+      console.error("Error fetching promotions:", error);
+      Alert.alert("Error", "Failed to load your promotions. Please try again.");
+    }
+  }, [isError, error]);
 
   // Filter promotions
   const filteredPromotions = React.useMemo(() => {
@@ -174,15 +117,26 @@ export default function MyPromotionsScreen() {
 
     // Filter by status
     if (filterStatus !== "all") {
-      filtered = filtered.filter(
-        (promotion) => promotion.status === filterStatus
-      );
+      filtered = filtered.filter((promotion) => {
+        switch (filterStatus) {
+          case "active":
+            return promotion.status === "ACTIVE";
+          case "pending":
+            return promotion.status === "PENDING";
+          case "expired":
+            return promotion.status === "EXPIRED";
+          case "inactive":
+            return promotion.status === "INACTIVE";
+          default:
+            return true;
+        }
+      });
     }
 
     return filtered;
   }, [promotions, filterStatus]);
 
-  const handlePromotionPress = (promotion: VendorPromotion) => {
+  const handlePromotionPress = (promotion: any) => {
     // TODO: Navigate to promotion details screen
     Alert.alert("Promotion Details", `View details for ${promotion.title}`, [
       { text: "Cancel", style: "cancel" },
@@ -193,19 +147,12 @@ export default function MyPromotionsScreen() {
     ]);
   };
 
-  const handleEditPromotion = (promotion: VendorPromotion) => {
-    // TODO: Navigate to edit promotion screen
-    Alert.alert("Edit Promotion", `Edit ${promotion.title}`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Edit",
-        onPress: () => console.log("Edit promotion:", promotion.id),
-      },
-    ]);
+  const handleEditPromotion = (promotion: any) => {
+    router.push(`/(dashboard)/(vendor)/edit-promotion?id=${promotion.id}`);
   };
 
-  const handleToggleStatus = (promotion: VendorPromotion) => {
-    const newStatus = promotion.status === "active" ? "inactive" : "active";
+  const handleToggleStatus = (promotion: any) => {
+    const newStatus = promotion.isActive ? "inactive" : "active";
     const action = newStatus === "active" ? "activate" : "deactivate";
 
     Alert.alert(
@@ -216,48 +163,118 @@ export default function MyPromotionsScreen() {
         {
           text: action.charAt(0).toUpperCase() + action.slice(1),
           onPress: () => {
-            setPromotions((prev) =>
-              prev.map((item) =>
-                item.id === promotion.id ? { ...item, status: newStatus } : item
-              )
-            );
+            // TODO: Implement update promotion API call
+            console.log("Toggle promotion status:", promotion.id, newStatus);
           },
         },
       ]
     );
   };
 
-  const handleDeletePromotion = (promotion: VendorPromotion) => {
-    Alert.alert(
-      "Delete Promotion",
-      `Are you sure you want to delete "${promotion.title}"? This action cannot be undone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            setPromotions((prev) =>
-              prev.filter((item) => item.id !== promotion.id)
-            );
-          },
-        },
-      ]
-    );
+  const handleDeletePromotion = (promotion: any) => {
+    // Show custom confirmation modal
+    setConfirmAction({
+      promotion,
+      action: "delete",
+    });
+    setShowConfirmModal(true);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
+  const handleTogglePromotionStatus = (promotion: any) => {
+    const currentStatus = promotion.status;
+    const currentToggle = promotion.isPromotionOn;
+    let newToggle: boolean;
+    let action: string;
+
+    // Check if promotion can be toggled (only ACTIVE promotions)
+    if (currentStatus !== "ACTIVE") {
+      Alert.alert(
+        "Cannot Change Status",
+        "This promotion is not active. You can only toggle active promotions.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
+    // Determine new toggle status based on current isPromotionOn value
+    if (currentToggle === true) {
+      newToggle = false;
+      action = "turn off";
+    } else {
+      newToggle = true;
+      action = "turn on";
+    }
+
+    // Show custom confirmation modal
+    setConfirmAction({
+      promotion,
+      action,
+      newToggle,
+    });
+    setShowConfirmModal(true);
+  };
+
+  // Dropdown menu functions
+  const openMenu = (promotion: any) => {
+    setSelectedPromotion(promotion);
+    setShowMenu(true);
+  };
+
+  const closeMenu = () => {
+    setShowMenu(false);
+    setSelectedPromotion(null);
+  };
+
+  const handleMenuAction = (action: string) => {
+    if (!selectedPromotion) return;
+
+    closeMenu();
+    switch (action) {
+      case "edit":
+        handleEditPromotion(selectedPromotion);
+        break;
+      case "toggle":
+        handleTogglePromotionStatus(selectedPromotion);
+        break;
+      case "delete":
+        handleDeletePromotion(selectedPromotion);
+        break;
+    }
+  };
+
+  const getStatusColor = (status: string | undefined) => {
+    if (!status) return COLORS.text.secondary;
+    switch (status.toUpperCase()) {
+      case "ACTIVE":
         return COLORS.success[500];
-      case "inactive":
-        return COLORS.error[500];
-      case "pending":
+      case "PENDING":
         return COLORS.warning[500];
-      case "expired":
+      case "INACTIVE":
+        return COLORS.error[500];
+      case "EXPIRED":
         return COLORS.text.secondary;
+      case "REJECTED":
+        return COLORS.error[600];
       default:
         return COLORS.text.secondary;
+    }
+  };
+
+  const getStatusText = (status: string | undefined) => {
+    if (!status) return "Unknown";
+    switch (status.toUpperCase()) {
+      case "ACTIVE":
+        return "Active";
+      case "PENDING":
+        return "Pending";
+      case "INACTIVE":
+        return "Inactive";
+      case "EXPIRED":
+        return "Expired";
+      case "REJECTED":
+        return "Rejected";
+      default:
+        return "Unknown";
     }
   };
 
@@ -305,35 +322,62 @@ export default function MyPromotionsScreen() {
     });
   };
 
-  const renderPromotionCard = (promotion: VendorPromotion) => {
+  const renderPromotionCard = (promotion: any) => {
     const cardContent = (
       <ResponsiveCard variant="outlined" style={styles.card}>
         {/* Image Header with Badges */}
         <View style={styles.imageContainer}>
-          <View style={styles.serviceImagePlaceholder}>
-            <Ionicons name="megaphone" size={40} color={COLORS.primary[300]} />
-          </View>
+          {promotion.bannerImage ? (
+            <Image
+              source={{
+                uri: promotion.bannerImage.startsWith("file://")
+                  ? promotion.bannerImage
+                  : promotion.bannerImage,
+              }}
+              style={styles.promotionImage}
+              onError={(error) => {
+                console.log("Image load error:", error);
+                console.log("Image URI:", promotion.bannerImage);
+              }}
+            />
+          ) : (
+            <View style={styles.serviceImagePlaceholder}>
+              <Ionicons
+                name="megaphone"
+                size={40}
+                color={COLORS.primary[300]}
+              />
+            </View>
+          )}
+
+          {/* Three-dot Menu */}
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => openMenu(promotion)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="ellipsis-vertical" size={20} color={COLORS.white} />
+          </TouchableOpacity>
 
           {/* Status Badges Overlay */}
           <View style={styles.badgesContainer}>
-            {promotion.badges.map((badge, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.badge,
-                  { backgroundColor: getBadgeColor(badge) + "80" },
-                ]}
+            <View
+              style={[
+                styles.badge,
+                {
+                  backgroundColor: getStatusColor(promotion.status) + "80",
+                },
+              ]}
+            >
+              <ResponsiveText
+                variant="caption2"
+                weight="medium"
+                color={COLORS.white}
+                style={styles.badgeText}
               >
-                <ResponsiveText
-                  variant="caption2"
-                  weight="medium"
-                  color={COLORS.white}
-                  style={styles.badgeText}
-                >
-                  {badge}
-                </ResponsiveText>
-              </View>
-            ))}
+                {getStatusText(promotion.status)}
+              </ResponsiveText>
+            </View>
           </View>
         </View>
 
@@ -357,10 +401,58 @@ export default function MyPromotionsScreen() {
                 color={COLORS.primary[300]}
                 style={styles.category}
               >
-                {promotion.category}
+                {promotion.serviceListings?.[0]?.categoryPath?.[0] || "General"}
               </ResponsiveText>
             </View>
           </View>
+
+          {/* Associated Services */}
+          {promotion.serviceListings &&
+            promotion.serviceListings.length > 0 && (
+              <View style={styles.servicesSection}>
+                <View style={styles.servicesHeader}>
+                  <Ionicons
+                    name="list"
+                    size={14}
+                    color={COLORS.text.secondary}
+                  />
+                  <ResponsiveText
+                    variant="caption1"
+                    weight="medium"
+                    color={COLORS.text.secondary}
+                    style={styles.servicesLabel}
+                  >
+                    Services ({promotion.serviceListings.length})
+                  </ResponsiveText>
+                </View>
+                <View style={styles.servicesList}>
+                  {promotion.serviceListings
+                    .slice(0, 3)
+                    .map((service: any, index: number) => (
+                      <View key={service.id} style={styles.serviceItem}>
+                        <View style={styles.serviceBullet} />
+                        <ResponsiveText
+                          variant="caption2"
+                          color={COLORS.text.primary}
+                          style={styles.serviceTitle}
+                          numberOfLines={1}
+                        >
+                          {service.title}
+                        </ResponsiveText>
+                      </View>
+                    ))}
+                  {promotion.serviceListings.length > 3 && (
+                    <ResponsiveText
+                      variant="caption2"
+                      color={COLORS.text.secondary}
+                      style={styles.moreServices}
+                    >
+                      +{promotion.serviceListings.length - 3} more services
+                    </ResponsiveText>
+                  )}
+                </View>
+              </View>
+            )}
 
           {/* Discount Info */}
           <View style={styles.discountSection}>
@@ -372,7 +464,9 @@ export default function MyPromotionsScreen() {
                   color={COLORS.success[500]}
                   style={styles.discountValue}
                 >
-                  {promotion.discountValue} OFF
+                  {promotion.discountType === "percentage"
+                    ? `${promotion.discountValue}% OFF`
+                    : `$${promotion.discountValue} OFF`}
                 </ResponsiveText>
                 {promotion.originalPrice && (
                   <View style={styles.priceContainer}>
@@ -381,7 +475,7 @@ export default function MyPromotionsScreen() {
                       color={COLORS.text.secondary}
                       style={styles.originalPrice}
                     >
-                      {promotion.originalPrice}
+                      ${promotion.originalPrice}
                     </ResponsiveText>
                     <ResponsiveText
                       variant="h6"
@@ -389,7 +483,7 @@ export default function MyPromotionsScreen() {
                       color={COLORS.primary[300]}
                       style={styles.discountedPrice}
                     >
-                      {promotion.discountedPrice}
+                      ${promotion.originalPrice - promotion.discountValue}
                     </ResponsiveText>
                   </View>
                 )}
@@ -398,7 +492,9 @@ export default function MyPromotionsScreen() {
                 <View
                   style={[
                     styles.statusDot,
-                    { backgroundColor: getStatusColor(promotion.status) },
+                    {
+                      backgroundColor: getStatusColor(promotion.status),
+                    },
                   ]}
                 />
                 <ResponsiveText
@@ -407,8 +503,7 @@ export default function MyPromotionsScreen() {
                   color={getStatusColor(promotion.status)}
                   style={styles.statusText}
                 >
-                  {promotion.status.charAt(0).toUpperCase() +
-                    promotion.status.slice(1)}
+                  {getStatusText(promotion.status)}
                 </ResponsiveText>
               </View>
             </View>
@@ -461,260 +556,430 @@ export default function MyPromotionsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <GlobalStatusBar />
-
-      {/* Header with Solid Background */}
-      <View style={styles.headerSolid}>
-        {/* Top Navigation */}
-        <View style={styles.topNavigation}>
-          <BackButton
-            onPress={() => router.back()}
-            variant="default"
-            size="medium"
-            showText={false}
-            showIcon={true}
-            iconName="arrow-back"
-          />
-          <ResponsiveText variant="h5" weight="bold" color={COLORS.white}>
-            My Promotions
-          </ResponsiveText>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => {
+    <>
+      <GlobalStatusBar
+        barStyle="light-content"
+        backgroundColor="rgba(0, 0, 0, 0.3)"
+        translucent={true}
+      />
+      <SafeAreaView style={styles.container} edges={["left", "right"]}>
+        {/* Header */}
+        <AppHeader
+          onBackPress={() => router.back()}
+          title="My Promotions"
+          rightActionButton={{
+            iconName: "add",
+            onPress: () => {
               router.push("/(dashboard)/(vendor)/create-promotion");
-            }}
-          >
-            <Ionicons
-              name="add"
-              size={LAYOUT.iconMedium}
-              color={COLORS.white}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
+            },
+            backgroundColor: COLORS.primary[300],
+            iconColor: COLORS.white,
+          }}
+        />
 
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Filter Bar */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterContainer}
+        <FlatList
+          data={filteredPromotions}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => renderPromotionCard(item)}
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
+            }
+          }}
+          onEndReachedThreshold={0.5}
+          ListHeaderComponent={() => (
+            <View>
+              {/* Filter Bar */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.filterContainer}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.filterButton,
+                    filterStatus === "all" && styles.filterButtonActive,
+                  ]}
+                  onPress={() => setFilterStatus("all")}
+                >
+                  <ResponsiveText
+                    variant="caption1"
+                    weight="medium"
+                    color={
+                      filterStatus === "all"
+                        ? COLORS.primary[600]
+                        : COLORS.text.secondary
+                    }
+                  >
+                    All
+                  </ResponsiveText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.filterButton,
+                    filterStatus === "active" && styles.filterButtonActive,
+                  ]}
+                  onPress={() => setFilterStatus("active")}
+                >
+                  <ResponsiveText
+                    variant="caption1"
+                    weight="medium"
+                    color={
+                      filterStatus === "active"
+                        ? COLORS.primary[600]
+                        : COLORS.text.secondary
+                    }
+                  >
+                    Active
+                  </ResponsiveText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.filterButton,
+                    filterStatus === "pending" && styles.filterButtonActive,
+                  ]}
+                  onPress={() => setFilterStatus("pending")}
+                >
+                  <ResponsiveText
+                    variant="caption1"
+                    weight="medium"
+                    color={
+                      filterStatus === "pending"
+                        ? COLORS.primary[600]
+                        : COLORS.text.secondary
+                    }
+                  >
+                    Pending
+                  </ResponsiveText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.filterButton,
+                    filterStatus === "expired" && styles.filterButtonActive,
+                  ]}
+                  onPress={() => setFilterStatus("expired")}
+                >
+                  <ResponsiveText
+                    variant="caption1"
+                    weight="medium"
+                    color={
+                      filterStatus === "expired"
+                        ? COLORS.primary[600]
+                        : COLORS.text.secondary
+                    }
+                  >
+                    Expired
+                  </ResponsiveText>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          )}
+          ListEmptyComponent={() => (
+            <ResponsiveCard variant="elevated" style={styles.emptyCard}>
+              <Ionicons
+                name="megaphone-outline"
+                size={LAYOUT.iconLarge}
+                color={COLORS.text.secondary}
+              />
+              <ResponsiveText
+                variant="h6"
+                weight="medium"
+                color={COLORS.text.secondary}
+                style={styles.emptyTitle}
+              >
+                No Promotions Found
+              </ResponsiveText>
+              <ResponsiveText
+                variant="body2"
+                color={COLORS.text.secondary}
+                style={styles.emptyDescription}
+              >
+                {filterStatus === "all"
+                  ? "Start by creating your first promotion"
+                  : `No promotions found for the selected filter`}
+              </ResponsiveText>
+              {filterStatus === "all" && (
+                <ResponsiveButton
+                  title="Create First Promotion"
+                  variant="primary"
+                  size="medium"
+                  onPress={() => {
+                    router.push("/(dashboard)/(vendor)/create-promotion");
+                  }}
+                  style={styles.addFirstButton}
+                />
+              )}
+            </ResponsiveCard>
+          )}
+          ListFooterComponent={() => (
+            <View style={styles.bottomSpacing}>
+              {isFetchingNextPage && (
+                <View style={styles.loadingFooter}>
+                  <ActivityIndicator size="small" color={COLORS.primary[500]} />
+                  <ResponsiveText
+                    variant="body2"
+                    color={COLORS.text.secondary}
+                    style={styles.loadingFooterText}
+                  >
+                    Loading more promotions...
+                  </ResponsiveText>
+                </View>
+              )}
+            </View>
+          )}
+          refreshing={isLoading}
+          onRefresh={refetch}
+        />
+
+        {/* Action Menu Modal */}
+        <Modal
+          visible={showMenu}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={closeMenu}
         >
           <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filterStatus === "all" && styles.filterButtonActive,
-            ]}
-            onPress={() => setFilterStatus("all")}
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={closeMenu}
           >
-            <ResponsiveText
-              variant="caption1"
-              weight="medium"
-              color={
-                filterStatus === "all"
-                  ? COLORS.primary[600]
-                  : COLORS.text.secondary
-              }
-            >
-              All
-            </ResponsiveText>
-            <View
-              style={[
-                styles.filterCount,
-                filterStatus === "all"
-                  ? styles.filterCountActive
-                  : styles.filterCountInactive,
-              ]}
-            >
-              <ResponsiveText
-                variant="caption3"
-                weight="medium"
-                color={
-                  filterStatus === "all" ? COLORS.white : COLORS.text.secondary
-                }
-              >
-                {promotions.length}
-              </ResponsiveText>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filterStatus === "active" && styles.filterButtonActive,
-            ]}
-            onPress={() => setFilterStatus("active")}
-          >
-            <ResponsiveText
-              variant="caption1"
-              weight="medium"
-              color={
-                filterStatus === "active"
-                  ? COLORS.primary[600]
-                  : COLORS.text.secondary
-              }
-            >
-              Active
-            </ResponsiveText>
-            <View
-              style={[
-                styles.filterCount,
-                filterStatus === "active"
-                  ? styles.filterCountActive
-                  : styles.filterCountInactive,
-              ]}
-            >
-              <ResponsiveText
-                variant="caption3"
-                weight="medium"
-                color={
-                  filterStatus === "active"
-                    ? COLORS.white
-                    : COLORS.text.secondary
-                }
-              >
-                {promotions.filter((p) => p.status === "active").length}
-              </ResponsiveText>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filterStatus === "pending" && styles.filterButtonActive,
-            ]}
-            onPress={() => setFilterStatus("pending")}
-          >
-            <ResponsiveText
-              variant="caption1"
-              weight="medium"
-              color={
-                filterStatus === "pending"
-                  ? COLORS.primary[600]
-                  : COLORS.text.secondary
-              }
-            >
-              Pending
-            </ResponsiveText>
-            <View
-              style={[
-                styles.filterCount,
-                filterStatus === "pending"
-                  ? styles.filterCountActive
-                  : styles.filterCountInactive,
-              ]}
-            >
-              <ResponsiveText
-                variant="caption3"
-                weight="medium"
-                color={
-                  filterStatus === "pending"
-                    ? COLORS.white
-                    : COLORS.text.secondary
-                }
-              >
-                {promotions.filter((p) => p.status === "pending").length}
-              </ResponsiveText>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filterStatus === "expired" && styles.filterButtonActive,
-            ]}
-            onPress={() => setFilterStatus("expired")}
-          >
-            <ResponsiveText
-              variant="caption1"
-              weight="medium"
-              color={
-                filterStatus === "expired"
-                  ? COLORS.primary[600]
-                  : COLORS.text.secondary
-              }
-            >
-              Expired
-            </ResponsiveText>
-            <View
-              style={[
-                styles.filterCount,
-                filterStatus === "expired"
-                  ? styles.filterCountActive
-                  : styles.filterCountInactive,
-              ]}
-            >
-              <ResponsiveText
-                variant="caption3"
-                weight="medium"
-                color={
-                  filterStatus === "expired"
-                    ? COLORS.white
-                    : COLORS.text.secondary
-                }
-              >
-                {promotions.filter((p) => p.status === "expired").length}
-              </ResponsiveText>
-            </View>
-          </TouchableOpacity>
-        </ScrollView>
+            <View style={styles.menuModal}>
+              <View style={styles.menuHeader}>
+                <ResponsiveText
+                  variant="h6"
+                  weight="medium"
+                  color={COLORS.text.primary}
+                >
+                  {selectedPromotion?.title}
+                </ResponsiveText>
+                <TouchableOpacity
+                  onPress={closeMenu}
+                  style={styles.closeButton}
+                >
+                  <Ionicons
+                    name="close"
+                    size={20}
+                    color={COLORS.text.secondary}
+                  />
+                </TouchableOpacity>
+              </View>
 
-        {/* Promotions */}
-        {isLoading ? (
-          <ResponsiveCard variant="elevated" style={styles.loadingCard}>
-            <ResponsiveText
-              variant="body1"
-              color={COLORS.text.secondary}
-              style={styles.loadingText}
-            >
-              Loading your promotions...
-            </ResponsiveText>
-          </ResponsiveCard>
-        ) : filteredPromotions.length === 0 ? (
-          <ResponsiveCard variant="elevated" style={styles.emptyCard}>
-            <Ionicons
-              name="megaphone-outline"
-              size={LAYOUT.iconLarge}
-              color={COLORS.text.secondary}
-            />
-            <ResponsiveText
-              variant="h6"
-              weight="medium"
-              color={COLORS.text.secondary}
-              style={styles.emptyTitle}
-            >
-              No Promotions Found
-            </ResponsiveText>
-            <ResponsiveText
-              variant="body2"
-              color={COLORS.text.secondary}
-              style={styles.emptyDescription}
-            >
-              {filterStatus === "all"
-                ? "Start by creating your first promotion"
-                : `No promotions found for the selected filter`}
-            </ResponsiveText>
-            {filterStatus === "all" && (
-              <ResponsiveButton
-                title="Create First Promotion"
-                variant="primary"
-                size="medium"
-                onPress={() => {
-                  router.push("/(dashboard)/(vendor)/create-promotion");
-                }}
-                style={styles.addFirstButton}
-              />
-            )}
-          </ResponsiveCard>
-        ) : (
-          filteredPromotions.map((promotion) => renderPromotionCard(promotion))
-        )}
+              <View style={styles.menuItems}>
+                {/* Edit Option */}
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleMenuAction("edit")}
+                >
+                  <View style={styles.menuItemIcon}>
+                    <Ionicons
+                      name="create-outline"
+                      size={20}
+                      color={COLORS.primary[500]}
+                    />
+                  </View>
+                  <ResponsiveText
+                    variant="body1"
+                    weight="medium"
+                    color={COLORS.text.primary}
+                  >
+                    Edit Promotion
+                  </ResponsiveText>
+                </TouchableOpacity>
 
-        {/* Bottom Spacing */}
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
-    </SafeAreaView>
+                {/* Toggle Status Option */}
+                {selectedPromotion && selectedPromotion.status === "ACTIVE" && (
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => handleMenuAction("toggle")}
+                  >
+                    <View style={styles.menuItemIcon}>
+                      <Ionicons
+                        name={
+                          selectedPromotion.isPromotionOn
+                            ? "pause-outline"
+                            : "play-outline"
+                        }
+                        size={20}
+                        color={
+                          selectedPromotion.isPromotionOn
+                            ? COLORS.warning[500]
+                            : COLORS.success[500]
+                        }
+                      />
+                    </View>
+                    <ResponsiveText
+                      variant="body1"
+                      weight="medium"
+                      color={COLORS.text.primary}
+                    >
+                      {selectedPromotion.isPromotionOn
+                        ? "Turn Off Promotion"
+                        : "Turn On Promotion"}
+                    </ResponsiveText>
+                  </TouchableOpacity>
+                )}
+
+                {/* Delete Option */}
+                <TouchableOpacity
+                  style={[styles.menuItem, styles.deleteMenuItem]}
+                  onPress={() => handleMenuAction("delete")}
+                >
+                  <View style={[styles.menuItemIcon, styles.deleteIcon]}>
+                    <Ionicons
+                      name="trash-outline"
+                      size={20}
+                      color={COLORS.error[500]}
+                    />
+                  </View>
+                  <ResponsiveText
+                    variant="body1"
+                    weight="medium"
+                    color={COLORS.error[500]}
+                  >
+                    Delete Promotion
+                  </ResponsiveText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
+        {/* Custom Confirmation Modal */}
+        <Modal
+          visible={showConfirmModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowConfirmModal(false)}
+        >
+          <View style={styles.confirmModalOverlay}>
+            <View style={styles.confirmModalContainer}>
+              {/* Modal Header */}
+              <View style={styles.confirmModalHeader}>
+                <ResponsiveText
+                  variant="h5"
+                  weight="bold"
+                  color={COLORS.text.primary}
+                >
+                  {confirmAction.action === "delete"
+                    ? "Delete Promotion"
+                    : `${
+                        confirmAction.action.charAt(0).toUpperCase() +
+                        confirmAction.action.slice(1)
+                      } Promotion`}
+                </ResponsiveText>
+              </View>
+
+              {/* Modal Content */}
+              <View style={styles.confirmModalContent}>
+                <ResponsiveText
+                  variant="body1"
+                  color={COLORS.text.secondary}
+                  style={styles.confirmModalMessage}
+                >
+                  {confirmAction.action === "delete"
+                    ? `Are you sure you want to delete "${confirmAction.promotion?.title}"? This action cannot be undone.`
+                    : `Are you sure you want to ${confirmAction.action} "${confirmAction.promotion?.title}"?`}
+                </ResponsiveText>
+              </View>
+
+              {/* Modal Actions */}
+              <View style={styles.confirmModalActions}>
+                <ResponsiveButton
+                  title="Cancel"
+                  variant="outline"
+                  size="small"
+                  onPress={() => setShowConfirmModal(false)}
+                  disabled={
+                    updatePromotionMutation.isPending ||
+                    deletePromotionMutation.isPending
+                  }
+                  style={styles.confirmModalCancelButton}
+                />
+
+                <ResponsiveButton
+                  title={
+                    confirmAction.action === "delete"
+                      ? deletePromotionMutation.isPending
+                        ? "Deleting..."
+                        : "Delete"
+                      : updatePromotionMutation.isPending
+                      ? `${
+                          confirmAction.action.charAt(0).toUpperCase() +
+                          confirmAction.action.slice(1)
+                        }ing...`
+                      : confirmAction.action.charAt(0).toUpperCase() +
+                        confirmAction.action.slice(1)
+                  }
+                  variant={
+                    confirmAction.action === "delete" ||
+                    confirmAction.action === "turn off"
+                      ? "danger"
+                      : "primary"
+                  }
+                  size="small"
+                  loading={
+                    confirmAction.action === "delete"
+                      ? deletePromotionMutation.isPending
+                      : updatePromotionMutation.isPending
+                  }
+                  onPress={() => {
+                    if (confirmAction.promotion) {
+                      if (confirmAction.action === "delete") {
+                        // Handle delete
+                        deletePromotionMutation.mutate(
+                          confirmAction.promotion.id,
+                          {
+                            onSuccess: () => {
+                              setShowConfirmModal(false);
+                              setConfirmAction({
+                                promotion: null,
+                                action: "",
+                                newToggle: false,
+                              });
+                            },
+                            onError: () => {
+                              // Keep modal open on error so user can retry
+                            },
+                          }
+                        );
+                      } else {
+                        // Handle toggle
+                        updatePromotionMutation.mutate(
+                          {
+                            id: confirmAction.promotion.id,
+                            data: { isPromotionOn: confirmAction.newToggle },
+                          },
+                          {
+                            onSuccess: () => {
+                              setShowConfirmModal(false);
+                              setConfirmAction({
+                                promotion: null,
+                                action: "",
+                                newToggle: false,
+                              });
+                            },
+                            onError: () => {
+                              // Keep modal open on error so user can retry
+                            },
+                          }
+                        );
+                      }
+                    }
+                  }}
+                  disabled={
+                    updatePromotionMutation.isPending ||
+                    deletePromotionMutation.isPending
+                  }
+                  style={styles.confirmModalConfirmButton}
+                />
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -722,28 +987,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background.primary,
-  },
-  headerSolid: {
-    backgroundColor: COLORS.primary[200],
-    paddingTop: MARGIN.sm,
-    paddingBottom: MARGIN.md - 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border.light,
-  },
-  topNavigation: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: PADDING.screen,
-    marginBottom: MARGIN.sm,
-  },
-  addButton: {
-    width: LAYOUT.buttonHeightSmall,
-    height: LAYOUT.buttonHeightSmall,
-    borderRadius: BORDER_RADIUS.xl,
-    backgroundColor: COLORS.primary[300],
-    justifyContent: "center",
-    alignItems: "center",
   },
   scrollView: {
     flex: 1,
@@ -767,20 +1010,6 @@ const styles = StyleSheet.create({
   filterButtonActive: {
     backgroundColor: COLORS.primary[50],
     borderColor: COLORS.primary[200],
-  },
-  filterCount: {
-    marginLeft: MARGIN.sm,
-    paddingHorizontal: PADDING.xs,
-    paddingVertical: 2,
-    borderRadius: BORDER_RADIUS.full,
-    minWidth: 20,
-    alignItems: "center",
-  },
-  filterCountActive: {
-    backgroundColor: COLORS.primary[500],
-  },
-  filterCountInactive: {
-    backgroundColor: COLORS.background.light,
   },
   loadingCard: {
     marginTop: MARGIN.lg,
@@ -809,6 +1038,16 @@ const styles = StyleSheet.create({
   bottomSpacing: {
     height: 100,
   },
+  loadingFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: PADDING.lg,
+    gap: MARGIN.sm,
+  },
+  loadingFooterText: {
+    textAlign: "center",
+  },
   // Promotion Card Styles
   cardWrapper: {
     marginBottom: MARGIN.md,
@@ -829,6 +1068,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  promotionImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
   badgesContainer: {
     position: "absolute",
     top: MARGIN.md,
@@ -847,9 +1091,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   detailsContainer: {
-    paddingTop: PADDING.lg - 10,
-    paddingHorizontal: PADDING.lg - 20,
-    paddingBottom: PADDING.xs,
+    paddingTop: PADDING.md,
+    paddingHorizontal: PADDING.xs,
+    paddingBottom: PADDING.sm,
   },
   titleSection: {
     marginBottom: MARGIN.md,
@@ -865,6 +1109,44 @@ const styles = StyleSheet.create({
   },
   category: {
     // Category styling
+  },
+  servicesSection: {
+    marginBottom: MARGIN.md,
+    paddingVertical: PADDING.sm,
+    paddingHorizontal: PADDING.md,
+    backgroundColor: COLORS.background.light,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  servicesHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: MARGIN.sm,
+    gap: MARGIN.xs,
+  },
+  servicesLabel: {
+    // Services label styling
+  },
+  servicesList: {
+    gap: MARGIN.xs,
+  },
+  serviceItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: MARGIN.sm,
+  },
+  serviceBullet: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.primary[300],
+  },
+  serviceTitle: {
+    flex: 1,
+    // Service title styling
+  },
+  moreServices: {
+    fontStyle: "italic",
+    marginTop: MARGIN.xs,
   },
   discountSection: {
     marginBottom: MARGIN.lg,
@@ -932,5 +1214,139 @@ const styles = StyleSheet.create({
   },
   updateTime: {
     fontSize: 12,
+  },
+  // Menu button styles
+  menuButton: {
+    position: "absolute",
+    top: MARGIN.sm,
+    right: MARGIN.sm,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  menuModal: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.xl,
+    marginHorizontal: PADDING.lg,
+    minWidth: 300,
+    maxWidth: 340,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 12,
+    overflow: "hidden",
+  },
+  menuHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: PADDING.lg,
+    paddingVertical: PADDING.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border.light,
+    backgroundColor: COLORS.neutral[50],
+  },
+  closeButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.neutral[100],
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  menuItems: {
+    paddingVertical: PADDING.sm,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: PADDING.lg,
+    paddingVertical: PADDING.lg,
+  },
+  menuItemIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.neutral[50],
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: MARGIN.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border.light,
+  },
+  deleteMenuItem: {
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border.light,
+    marginTop: MARGIN.xs,
+    backgroundColor: COLORS.error[50],
+  },
+  deleteIcon: {
+    backgroundColor: COLORS.error[50],
+    borderColor: COLORS.error[200],
+  },
+  // Confirmation Modal styles
+  confirmModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: PADDING.lg,
+  },
+  confirmModalContainer: {
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    width: "100%",
+    maxWidth: 400,
+    shadowColor: COLORS.black,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  confirmModalHeader: {
+    paddingHorizontal: PADDING.lg,
+    paddingTop: PADDING.lg,
+    paddingBottom: PADDING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border.light,
+  },
+  confirmModalContent: {
+    paddingHorizontal: PADDING.lg,
+    paddingVertical: PADDING.lg,
+  },
+  confirmModalMessage: {
+    textAlign: "center",
+    lineHeight: LINE_HEIGHT.body1,
+  },
+  confirmModalActions: {
+    flexDirection: "row",
+    paddingHorizontal: PADDING.lg,
+    paddingBottom: PADDING.lg,
+    gap: MARGIN.md,
+  },
+  confirmModalCancelButton: {
+    flex: 1,
+  },
+  confirmModalConfirmButton: {
+    flex: 1,
   },
 });

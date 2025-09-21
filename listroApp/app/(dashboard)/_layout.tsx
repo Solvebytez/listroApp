@@ -6,6 +6,7 @@ export default function DashboardLayout() {
       <Stack.Screen name="(user)" options={{ headerShown: false }} />
       <Stack.Screen name="(vendor)" options={{ headerShown: false }} />
       <Stack.Screen name="(salesman)" options={{ headerShown: false }} />
+      <Stack.Screen name="service-details" options={{ headerShown: false }} />
     </Stack>
   );
 }

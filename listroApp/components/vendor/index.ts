@@ -14,3 +14,4 @@ export { default as DropdownCategorySelector } from "./DropdownCategorySelector"
 export { default as BusinessAddressForm } from "./BusinessAddressForm";
 export { default as BusinessAddressList } from "./BusinessAddressList";
 export { ServiceImageUpload } from "./ServiceImageUpload";
+export { default as BusinessHours } from "./BusinessHours";

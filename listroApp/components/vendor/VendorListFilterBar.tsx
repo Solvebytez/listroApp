@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS, MARGIN, PADDING, BORDER_RADIUS } from "@/constants";
 import { ResponsiveText } from "@/components/UI";
 
-export type FilterStatus = "all" | "live" | "pending" | "inactive";
+export type FilterStatus = "all" | "ACTIVE" | "PENDING" | "REJECTED" | "OFF_SERVICE";
 export type SortOption =
   | "recently_updated"
   | "most_popular"
@@ -27,9 +27,10 @@ export const VendorListFilterBar: React.FC<VendorListFilterBarProps> = ({
 
   const statusOptions = [
     { value: "all" as FilterStatus, label: "All Status" },
-    { value: "live" as FilterStatus, label: "Live" },
-    { value: "pending" as FilterStatus, label: "Pending" },
-    { value: "inactive" as FilterStatus, label: "Inactive" },
+    { value: "ACTIVE" as FilterStatus, label: "Active" },
+    { value: "PENDING" as FilterStatus, label: "Pending" },
+    { value: "REJECTED" as FilterStatus, label: "Rejected" },
+    { value: "OFF_SERVICE" as FilterStatus, label: "Off Service" },
   ];
 
   const getStatusLabel = (status: FilterStatus) => {

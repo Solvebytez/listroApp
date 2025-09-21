@@ -14,7 +14,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -29,7 +29,7 @@ import {
   AppHeader,
 } from "@/components";
 import { useMyServiceListings } from "@/hooks/useServiceListings";
-import { useCreatePromotion } from "@/hooks/usePromotions";
+import { useUpdatePromotion, useVendorPromotion } from "@/hooks/usePromotions";
 import {
   COLORS,
   FONT_SIZE,
@@ -40,7 +40,7 @@ import {
   LAYOUT,
 } from "@/constants";
 
-// Form validation schema
+// Form validation schema (same as create form)
 const promotionSchema = yup.object({
   title: yup
     .string()
@@ -128,8 +128,9 @@ const promotionSchema = yup.object({
 
 type PromotionFormData = yup.InferType<typeof promotionSchema>;
 
-export default function CreatePromotionScreen() {
+export default function EditPromotionScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showServiceListingDropdown, setShowServiceListingDropdown] =
     useState(false);
@@ -138,10 +139,15 @@ export default function CreatePromotionScreen() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageLoadError, setImageLoadError] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+
+  // Debug selectedImage state
+  console.log("🖼️ EDIT SCREEN - Selected image state:", selectedImage);
+  console.log("🖼️ EDIT SCREEN - Image load error state:", imageLoadError);
 
   const {
     control,
@@ -149,6 +155,7 @@ export default function CreatePromotionScreen() {
     formState: { errors },
     watch,
     setValue,
+    reset,
   } = useForm<PromotionFormData>({
     resolver: yupResolver(promotionSchema) as any,
     defaultValues: {
@@ -166,16 +173,33 @@ export default function CreatePromotionScreen() {
   const watchedDiscountType = watch("discountType");
   const watchedServiceListingIds = watch("serviceListingIds");
 
-  // Sync form value with local state
+  // Fetch promotion data
+  const {
+    data: promotion,
+    isLoading: isLoadingPromotion,
+    error: promotionError,
+    refetch: refetchPromotion,
+  } = useVendorPromotion(id);
+
+  // Debug promotion data when it loads
   useEffect(() => {
-    if (watchedServiceListingIds && Array.isArray(watchedServiceListingIds)) {
-      setSelectedServiceIds(
-        watchedServiceListingIds.filter(
-          (id): id is string => typeof id === "string"
-        )
+    if (promotion) {
+      console.log("🔍 EDIT SCREEN - Promotion data loaded:", promotion);
+      console.log(
+        "🔍 EDIT SCREEN - Service listings:",
+        promotion.serviceListings
+      );
+      console.log(
+        "🔍 EDIT SCREEN - Service listings length:",
+        promotion.serviceListings?.length || 0
+      );
+      console.log("🔍 EDIT SCREEN - My service listings:", myServiceListings);
+      console.log(
+        "🔍 EDIT SCREEN - My service listings length:",
+        myServiceListings.length
       );
     }
-  }, [watchedServiceListingIds]);
+  }, [promotion]);
 
   // Fetch user's service listings
   const {
@@ -187,16 +211,65 @@ export default function CreatePromotionScreen() {
   // Extract the actual listings array from the response
   const myServiceListings = myServiceListingsResponse?.data || [];
 
-  // Debug service listings data
-  console.log(
-    "🔍 CREATE SCREEN - My service listings response:",
-    myServiceListingsResponse
-  );
-  console.log("🔍 CREATE SCREEN - My service listings:", myServiceListings);
-  console.log(
-    "🔍 CREATE SCREEN - My service listings length:",
-    myServiceListings.length
-  );
+  // Update promotion mutation
+  const updatePromotionMutation = useUpdatePromotion();
+
+  // Populate form when promotion data is loaded
+  useEffect(() => {
+    if (promotion) {
+      // Set form values
+      setValue("title", promotion.title);
+      setValue("discountType", promotion.discountType.toLowerCase());
+      setValue("discountValue", promotion.discountValue.toString());
+      setValue("originalPrice", promotion.originalPrice?.toString() || "");
+      setValue("startDate", promotion.startDate);
+      setValue("endDate", promotion.endDate);
+      setValue("bannerImage", promotion.bannerImage || "");
+
+      // Set service listing IDs
+      const serviceIds = promotion.serviceListings?.map((s: any) => s.id) || [];
+      // Handle case where serviceListings is undefined or empty
+      if (
+        !promotion.serviceListings ||
+        promotion.serviceListings.length === 0
+      ) {
+        console.log("⚠️ No service listings found for this promotion");
+        setValue("serviceListingIds", []);
+        setSelectedServiceIds([]);
+      } else {
+        setValue("serviceListingIds", serviceIds);
+        setSelectedServiceIds(serviceIds);
+      }
+
+      // Set dates for date pickers
+      setStartDate(new Date(promotion.startDate));
+      setEndDate(new Date(promotion.endDate));
+
+      // Set banner image
+      if (promotion.bannerImage) {
+        console.log(
+          "🖼️ Setting banner image from promotion:",
+          promotion.bannerImage
+        );
+        setSelectedImage(promotion.bannerImage);
+        setImageLoadError(false); // Reset error state when loading from promotion
+      } else {
+        console.log("🖼️ No banner image in promotion data");
+        setSelectedImage(null);
+        setImageLoadError(false);
+      }
+    }
+  }, [promotion, setValue]);
+
+  // Sync form value with local state
+  useEffect(() => {
+    if (watchedServiceListingIds && Array.isArray(watchedServiceListingIds)) {
+      const filteredIds = watchedServiceListingIds.filter(
+        (id): id is string => typeof id === "string"
+      );
+      setSelectedServiceIds(filteredIds);
+    }
+  }, [watchedServiceListingIds]);
 
   // Filter active services for the dropdown
   const activeServices = myServiceListings.filter(
@@ -234,53 +307,126 @@ export default function CreatePromotionScreen() {
     { value: "fixed", label: "Fixed Amount ($)" },
   ];
 
-  // Create promotion mutation
-  const createPromotionMutation = useCreatePromotion();
-
   const onSubmit = async (data: PromotionFormData) => {
     try {
       setIsSubmitting(true);
 
-      // Prepare the data for API
-      const promotionData = {
-        title: data.title,
-        serviceListingIds: (data.serviceListingIds || []).filter(
+      // Prepare the data for API - only include changed fields
+      const promotionData: any = {};
+
+      // Compare with original data and only include changed fields
+      if (promotion) {
+        // Title
+        if (data.title !== promotion.title) {
+          promotionData.title = data.title;
+        }
+
+        // Service listings
+        const currentServiceIds =
+          promotion.serviceListings?.map((s: any) => s.id) || [];
+        const newServiceIds = (data.serviceListingIds || []).filter(
           (id): id is string => typeof id === "string"
-        ),
-        discountType: data.discountType as "percentage" | "fixed",
-        discountValue: parseFloat(data.discountValue),
-        originalPrice: data.originalPrice
+        );
+
+        // Check if service listings changed
+        const serviceIdsChanged =
+          currentServiceIds.length !== newServiceIds.length ||
+          !currentServiceIds.every((id) => newServiceIds.includes(id));
+
+        if (serviceIdsChanged) {
+          promotionData.serviceListingIds = newServiceIds;
+        }
+
+        // Discount type
+        if (data.discountType !== promotion.discountType.toLowerCase()) {
+          promotionData.discountType = data.discountType as
+            | "percentage"
+            | "fixed";
+        }
+
+        // Discount value
+        if (parseFloat(data.discountValue) !== promotion.discountValue) {
+          promotionData.discountValue = parseFloat(data.discountValue);
+        }
+
+        // Original price
+        const newOriginalPrice = data.originalPrice
           ? parseFloat(data.originalPrice)
-          : undefined,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        bannerImage:
+          : undefined;
+        if (newOriginalPrice !== promotion.originalPrice) {
+          promotionData.originalPrice = newOriginalPrice;
+        }
+
+        // Start date
+        if (data.startDate !== promotion.startDate) {
+          promotionData.startDate = data.startDate;
+        }
+
+        // End date
+        if (data.endDate !== promotion.endDate) {
+          promotionData.endDate = data.endDate;
+        }
+
+        // Banner image
+        const newBannerImage =
           data.bannerImage && data.bannerImage.trim() !== ""
             ? data.bannerImage
-            : undefined,
-      };
+            : undefined;
+        if (newBannerImage !== promotion.bannerImage) {
+          promotionData.bannerImage = newBannerImage;
+        }
+      } else {
+        // Fallback: if no original data, send all fields
+        promotionData.title = data.title;
+        promotionData.serviceListingIds = (data.serviceListingIds || []).filter(
+          (id): id is string => typeof id === "string"
+        );
+        promotionData.discountType = data.discountType as
+          | "percentage"
+          | "fixed";
+        promotionData.discountValue = parseFloat(data.discountValue);
+        promotionData.originalPrice = data.originalPrice
+          ? parseFloat(data.originalPrice)
+          : undefined;
+        promotionData.startDate = data.startDate;
+        promotionData.endDate = data.endDate;
+        promotionData.bannerImage =
+          data.bannerImage && data.bannerImage.trim() !== ""
+            ? data.bannerImage
+            : undefined;
+      }
 
-      // DEBUG: Log the data being sent
-      console.log("🚀 FRONTEND DEBUG - Promotion data being sent:");
-      console.log("Raw form data:", data);
-      console.log("Processed promotion data:", promotionData);
-      console.log("Start date type:", typeof promotionData.startDate);
-      console.log("Start date value:", promotionData.startDate);
-      console.log("Banner image type:", typeof promotionData.bannerImage);
-      console.log("Banner image value:", promotionData.bannerImage);
+      // Check if there are any changes
+      if (Object.keys(promotionData).length === 0) {
+        Alert.alert("No Changes", "No changes were made to the promotion.");
+        return;
+      }
 
-      // Create promotion via API
-      await createPromotionMutation.mutateAsync(promotionData);
+      console.log("🔄 Updating promotion with changes:", promotionData);
 
-      Alert.alert("Success", "Promotion created successfully!", [
+      // Update promotion via API
+      await updatePromotionMutation.mutateAsync({
+        id: id!,
+        data: promotionData,
+      });
+
+      // Refetch promotion data to ensure we have the latest data
+      const refetchResult = await refetchPromotion();
+      console.log("🔄 REFETCH RESULT:", refetchResult.data);
+      console.log(
+        "🔄 REFETCH SERVICE LISTINGS:",
+        refetchResult.data?.serviceListings
+      );
+
+      Alert.alert("Success", "Promotion updated successfully!", [
         {
           text: "OK",
           onPress: () => router.back(),
         },
       ]);
     } catch (error) {
-      console.error("Error creating promotion:", error);
-      Alert.alert("Error", "Failed to create promotion. Please try again.");
+      console.error("Error updating promotion:", error);
+      Alert.alert("Error", "Failed to update promotion. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -409,6 +555,7 @@ export default function CreatePromotionScreen() {
       // Set the Cloudinary URL
       const cloudinaryUrl = result.data.imageUrl;
       setSelectedImage(cloudinaryUrl);
+      setImageLoadError(false); // Reset error state for new image
       setValue("bannerImage", cloudinaryUrl);
 
       Alert.alert(
@@ -445,6 +592,89 @@ export default function CreatePromotionScreen() {
     setShowEndDatePicker(false);
   };
 
+  // Show loading state
+  if (isLoadingPromotion) {
+    return (
+      <>
+        <GlobalStatusBar
+          barStyle="light-content"
+          backgroundColor={COLORS.primary[500]}
+          translucent={false}
+        />
+        <SafeAreaView style={styles.safeArea} edges={["left", "right"]}>
+          <View style={styles.container}>
+            <AppHeader
+              onBackPress={() => router.back()}
+              title="Edit Promotion"
+              subtext="Loading promotion details..."
+            />
+            <View style={styles.loadingContainer}>
+              <ResponsiveText
+                variant="body1"
+                color={COLORS.text.secondary}
+                style={styles.loadingText}
+              >
+                Loading promotion details...
+              </ResponsiveText>
+            </View>
+          </View>
+        </SafeAreaView>
+      </>
+    );
+  }
+
+  // Show error state
+  if (promotionError || !promotion) {
+    return (
+      <>
+        <GlobalStatusBar
+          barStyle="light-content"
+          backgroundColor={COLORS.primary[500]}
+          translucent={false}
+        />
+        <SafeAreaView style={styles.safeArea} edges={["left", "right"]}>
+          <View style={styles.container}>
+            <AppHeader
+              onBackPress={() => router.back()}
+              title="Edit Promotion"
+              subtext="Error loading promotion"
+            />
+            <View style={styles.errorContainer}>
+              <Ionicons
+                name="alert-circle-outline"
+                size={48}
+                color={COLORS.error[500]}
+              />
+              <ResponsiveText
+                variant="h6"
+                weight="medium"
+                color={COLORS.error[500]}
+                style={styles.errorTitle}
+              >
+                Error Loading Promotion
+              </ResponsiveText>
+              <ResponsiveText
+                variant="body2"
+                color={COLORS.text.secondary}
+                style={styles.errorDescription}
+              >
+                {promotionError?.message ||
+                  "Promotion not found or access denied."}
+              </ResponsiveText>
+              <ResponsiveButton
+                title="Go Back"
+                variant="outline"
+                size="medium"
+                onPress={() => router.back()}
+                style={styles.errorButton}
+              />
+            </View>
+          </View>
+        </SafeAreaView>
+      </>
+    );
+  }
+
   return (
     <>
       <GlobalStatusBar
@@ -457,8 +687,8 @@ export default function CreatePromotionScreen() {
           {/* Header */}
           <AppHeader
             onBackPress={() => router.back()}
-            title="Create Promotion"
-            subtext="Create a new promotion for your services"
+            title="Edit Promotion"
+            subtext="Update your promotion details"
           />
 
           <ScrollView
@@ -504,10 +734,22 @@ export default function CreatePromotionScreen() {
                       Uploading image...
                     </ResponsiveText>
                   </View>
-                ) : selectedImage ? (
+                ) : selectedImage && !imageLoadError ? (
                   <Image
                     source={{ uri: selectedImage }}
                     style={styles.uploadedImage}
+                    onError={(error) => {
+                      console.log("🖼️ Image load error:", error);
+                      console.log("🖼️ Image URI:", selectedImage);
+                      setImageLoadError(true);
+                    }}
+                    onLoad={() => {
+                      console.log(
+                        "🖼️ Image loaded successfully:",
+                        selectedImage
+                      );
+                      setImageLoadError(false);
+                    }}
                   />
                 ) : (
                   <View style={styles.imagePlaceholder}>
@@ -755,7 +997,7 @@ export default function CreatePromotionScreen() {
                                           color={COLORS.text.secondary}
                                           style={styles.serviceCategory}
                                         >
-                                          {service.categoryPath?.join(" > ") ||
+                                          {service.category?.name ||
                                             "Uncategorized"}
                                         </ResponsiveText>
                                       </View>
@@ -1108,13 +1350,13 @@ export default function CreatePromotionScreen() {
           {/* Fixed Bottom Button */}
           <View style={styles.fixedBottomButton}>
             <ResponsiveButton
-              title="Create Promotion"
+              title="Update Promotion"
               variant="primary"
               size="large"
               fullWidth
               onPress={handleSubmit(onSubmit)}
-              loading={isSubmitting || createPromotionMutation.isPending}
-              disabled={isSubmitting || createPromotionMutation.isPending}
+              loading={isSubmitting || updatePromotionMutation.isPending}
+              disabled={isSubmitting || updatePromotionMutation.isPending}
             />
           </View>
         </View>
@@ -1456,5 +1698,23 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     color: COLORS.error[500],
     fontFamily: "System",
+  },
+  // Error state styles
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: PADDING.lg,
+    gap: MARGIN.lg,
+  },
+  errorTitle: {
+    textAlign: "center",
+  },
+  errorDescription: {
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  errorButton: {
+    marginTop: MARGIN.md,
   },
 });
